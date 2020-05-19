@@ -10,18 +10,17 @@
 """
 import os, time
 from glob import glob
-import numpy as np
-from scipy import stats
+import numpy as np 
 from astropy.io import fits 
-from photlib import read_params
+from photlib import read_params, prnlog
 
 par = read_params() 
 
 os.chdir(par['WORKDIR'])
-print ('#WORK DIR: ', par['WORKDIR'])
+prnlog('#WORK DIR: %s' % par['WORKDIR'])
 # FILTERING for binning option
 BINNING = int(par['BINNING'])
-print ('#BINNING for processing: ', BINNING)
+prnlog('#BINNING for processing: %i' % BINNING)
 # MAKE object + bias + dark + flat image file list 
 # modify wild cards (*.fits) for your observation file name
 flist = glob('object-*.fits')  
@@ -37,11 +36,11 @@ for fname in flist:
     if hdr.get('XBINNING') != BINNING: continue
     if hdr.get('YBINNING') != BINNING: continue
     # READ the FITS file header and INPUT into the list 
-    TARGET.append(hdr.get('OBJECT'))
-    TYPE.append(str.lower(str.strip(hdr.get('IMAGETYP'))))
-    DATEOBS.append(hdr.get('DATE-OBS'))
-    EXPTIME.append(hdr.get('EXPTIME'))
-    FILTER.append(str.strip(hdr.get('FILTER')))
+    TARGET.append(hdr['OBJECT'])
+    TYPE.append(str.lower(hdr['IMAGETYP']))
+    DATEOBS.append(hdr['DATE-OBS'])
+    EXPTIME.append(hdr['EXPTIME'])
+    FILTER.append(hdr['FILTER'])
     FNAME.append(fname)
 
 # SORT the files for the observation time 
@@ -52,7 +51,7 @@ for rname in glob('w*.list'):
     os.remove(rname)
 
 for s in sort_list:
-    print (DATEOBS[s], TYPE[s], FILTER[s], EXPTIME[s], TARGET[s])
+    prnlog('{} {} {} {} {}'.format(DATEOBS[s], TYPE[s], FILTER[s], EXPTIME[s], TARGET[s]))
     # DEFINE the name of list file with FITS header info.  
     if TYPE[s] == 'bias': 
         lname = 'wbias.list'
@@ -66,7 +65,7 @@ for s in sort_list:
     f = open(lname, 'a') 
     f.write(FNAME[s]+'\n')
     f.close()
-    print ('add to '+lname+' ...' )
+    prnlog('add to '+lname+' ...' )
     
 time.sleep(2)    
 
@@ -78,14 +77,14 @@ for fname in bias_list:
     hdu = fits.open(fname)[0]
     dat, hdr = hdu.data, hdu.header
     bias_stack.append(dat)
-    print (fname, ' %8.1f %8.1f %8.1f %8.1f ' % \
-         (np.mean(dat), np.std(dat), np.max(dat), np.min(dat)))
+    prnlog('%s %8.1f %8.1f %8.1f %8.1f ' % \
+         (fname, np.mean(dat), np.std(dat), np.max(dat), np.min(dat)))
 master_bias = np.median(bias_stack, axis=0) 
 dat = master_bias
-print ('python %8.1f %8.1f %8.1f %8.1f' % \
+prnlog('python %8.1f %8.1f %8.1f %8.1f' % \
       (np.mean(dat), np.std(dat), np.max(dat), np.min(dat)))
 
-print ('Save to wbias.fits ...')
+prnlog('Save to wbias.fits ...')
 hdr.set('DATE-PRC', time.strftime('%Y-%m-%dT%H:%M:%S'))
 hdr.set('OBJECT', 'wbias')
 fits.writeto('wbias.fits', master_bias, hdr, overwrite=True)
@@ -95,25 +94,25 @@ list_files = glob('wdark*.list')
 master_darks, exptime_darks = [], [] 
 for lname in list_files:
     dark_list = np.genfromtxt(lname, dtype='U') 
-    fidx = lname.split('.')[0]
+    fidx = os.path.splitext(lname)[0]
 
     dark_stack = [] 
     for fname in dark_list: 
         hdu = fits.open(fname)[0]
         dat, hdr = hdu.data, hdu.header
         dark_stack.append(dat - master_bias) 
-        print (fname, ' %8.1f %8.1f %8.1f %8.1f ' % \
-           (np.mean(dat), np.std(dat), np.max(dat), np.min(dat)))
+        prnlog('%s %8.1f %8.1f %8.1f %8.1f ' % \
+           (fname, np.mean(dat), np.std(dat), np.max(dat), np.min(dat)))
     master_dark = np.median(dark_stack, axis=0)
     exptime_dark = hdr.get('EXPTIME')
-    print ('Save to '+fidx+'.fits ...', hdr.get('IMAGETYP'), hdr.get('EXPTIME'))
+    prnlog('Save to %s.fits ...%s %i' % (fidx, hdr['IMAGETYP'], hdr['EXPTIME']))
     hdr.set('OBJECT',fidx)
     hdr.set('DATE-PRC', time.strftime('%Y-%m-%dT%H:%M:%S'))
     hdr.set('EXPTIME', exptime_dark)
     fits.writeto(fidx+'.fits', master_dark, hdr, overwrite=True)        
 
     dat = master_dark 
-    print ('Python %8.1f %8.1f %8.1f %8.1f' % \
+    prnlog('Python %8.1f %8.1f %8.1f %8.1f' % \
            (np.mean(dat), np.std(dat), np.max(dat), np.min(dat)))
 
     master_darks.append(master_dark)
@@ -125,7 +124,7 @@ list_files = glob('wflat*.list')
 master_flats, filter_flats = [], [] 
 for lname in list_files: 
     flat_list = np.genfromtxt(lname, dtype='U') 
-    fidx = lname.split('.')[0]
+    fidx = os.path.splitext(lname)[0]
 
     flat_stack = [] 
     for fname in flat_list:
@@ -135,39 +134,36 @@ for lname in list_files:
         fdat = dat / np.median(dat)
         flat_stack.append(fdat)
         filter_flat = str.strip(hdr.get('FILTER'))
-        print (fname, ' %8.1f %8.1f %8.1f %8.1f ' % \
-            (np.mean(dat), np.std(dat), np.max(dat), np.min(dat)))
+        prnlog('%s %8.1f %8.1f %8.1f %8.1f ' % \
+            (fname, np.mean(dat), np.std(dat), np.max(dat), np.min(dat)))
     master_flat = np.median(flat_stack, axis=0)
-    print ('Save to '+fidx+'.fits ...', hdr.get('IMAGETYP'), hdr.get('FILTER'))
+    prnlog('Save to %s.fits ...%s %s' % (fidx, hdr['IMAGETYP'], hdr['FILTER']))
     hdr.set('DATE-PRC', time.strftime('%Y-%m-%dT%H:%M:%S'))
     hdr.set('OBJECT', fidx)
     hdr.set('FILTER', filter_flat)
     fits.writeto(fidx+'.fits', master_flat, hdr, overwrite=True)         
         
     dat = master_flat
-    print ('Python %8.6f %8.6f %8.6f %8.6f' % \
+    prnlog('Python %8.6f %8.6f %8.6f %8.6f' % \
            (np.mean(dat), np.std(dat), np.max(dat), np.min(dat)))
     master_flats.append(master_flat)
     filter_flats.append(filter_flat)    
 
 # Do preprocessing of object images 
-filter_flats = np.array(filter_flats)
-exptime_darks = np.array(exptime_darks)
-
 flist = np.genfromtxt('wobj.list', dtype='U')
 for fname in flist:
     hdu = fits.open(fname)[0]
     cIMAGE, hdr = hdu.data, hdu.header
-    cFILTER = hdr.get('FILTER')
-    cEXPTIME = hdr.get('EXPTIME')
+    cFILTER = str.strip(hdr.get('FILTER'))
+    cEXPTIME = float(hdr.get('EXPTIME'))
 
     # Find closest exposure time dark
-    dd = np.argmin(np.abs(exptime_darks - cEXPTIME))
+    dd = np.argmin(np.abs(np.array(exptime_darks) - cEXPTIME))
     dEXPTIME = exptime_darks[dd]
     dFRAME = master_darks[dd]
     dFRAME = dFRAME * (cEXPTIME/dEXPTIME)
     # Find flat image
-    ff = np.where(filter_flats == cFILTER)[0][0]
+    ff = filter_flats.index(cFILTER)
     fFILTER = filter_flats[ff]
     fFRAME = master_flats[ff]
     cIMAGE = cIMAGE - master_bias - dFRAME
@@ -176,5 +172,5 @@ for fname in flist:
     hdr.set('DATE-PRC', time.strftime('%Y-%m-%dT%H:%M:%S'))
     fits.writeto('w'+fname, cIMAGE, hdr, overwrite=True)
 
-    print (fname, '(',cFILTER, cEXPTIME,') << [', fFILTER, dEXPTIME,']')
+    prnlog('{}({},{})<<[{},{}]'.format(fname, cFILTER, cEXPTIME, fFILTER, dEXPTIME))
 

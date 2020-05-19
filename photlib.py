@@ -1,19 +1,29 @@
-#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
 Created on Fri Mar 30 15:19:01 2018
 
 @author: wskang
+@update: 2020/05/19
 """
 import numpy as np 
 import scipy.ndimage as sn
 import scipy.optimize as so
-from astropy import time, coordinates as coord
+import scipy.stats as ss
+from astropy import time as aptime, coordinates as apcoord
 from astropy.stats import sigma_clipped_stats
-#from photutils import DAOStarFinder 
+from astropy.modeling import models, fitting
+import matplotlib.pyplot as plt 
+import time 
+#from photutils import DAOStarFinder  
 
 LAT, LON, H = 34.5261362, 127.4470482, 81.35789
 
+def prnlog(text):
+    with open('system.log', 'a') as f:
+        f.write(time.strftime('%Y-%m-%d %H:%M:%S ')+text+'\n')
+    print(text)
+    return 
+        
 def read_params():
     f = open('pyapw.par', 'r')
     par = {}
@@ -22,25 +32,38 @@ def read_params():
         par.update({tmp[0]:tmp[1]})
     return par 
 
-def sigma_clip(xx, lower=3, upper=3):
-    '''
+def sigma_clip1(xx, lower=3, upper=3):
     mxx = np.ma.masked_array(xx)
     while 1:
-        avg = np.mean(mxx)
-        sig = np.std(mxx)
-        mask = (mxx <= (avg - lower*sig)) | (mxx > (avg + upper*sig))
+        xavg, xsig = np.mean(mxx), np.std(mxx)
+        mask = (mxx < (xavg - lower*xsig)) | (mxx > (xavg + upper*xsig))
         if (mask == mxx.mask).all():
             break
         mxx.mask = mask
-    return np.median(mxx), np.std(mxx)
+    return np.mean(mxx), np.std(mxx)
+
+def sigma_clip2(xx, lower=3, upper=3):
+    '''
+    OUTPUT: average, median, stddev
     '''
     return sigma_clipped_stats(xx, sigma_lower=lower, sigma_upper=upper)
 
+def sigma_clip3(xx, lower=3, upper=3):
+    '''
+    OUTPUT: average, median, stddev
+    '''
+    mxx, _, _ = ss.sigmaclip(xx, lower, upper)
+    return np.mean(mxx), np.median(mxx), np.std(mxx) 
+
+def sigma_clip(xx, lower=3, upper=3):
+    return sigma_clip3(xx)
+
+
 def helio_JD(DATEOBS, RA, Dec, exptime=0):
-    objcoo = coord.SkyCoord(RA, Dec, unit=('hourangle', 'deg'), frame='fk5')
-    doao = coord.EarthLocation.from_geodetic(LON, LAT, H)
-    times = time.Time(DATEOBS, format='isot', scale='utc', location=doao)
-    dt = time.TimeDelta(exptime / 2.0, format='sec')
+    objcoo = apcoord.SkyCoord(RA, Dec, unit=('hourangle', 'deg'), frame='fk5')
+    doao = apcoord.EarthLocation.from_geodetic(LON, LAT, H)
+    times = aptime.Time(DATEOBS, format='isot', scale='utc', location=doao)
+    dt = aptime.TimeDelta(exptime / 2.0, format='sec')
     times = times + dt
     # ltt_bary = times.light_travel_time(objcoo)
     # times_bary = times.tdb + ltt_bary
@@ -49,6 +72,24 @@ def helio_JD(DATEOBS, RA, Dec, exptime=0):
 
     return times_helio.jd
 
+def airmass(alt):
+    """Computes the airmass at a given altitude.
+    Inputs:
+    - alt   the observed altitude, as affected by refraction (deg)
+    Returns an estimate of the air mass, in units of that at the zenith.
+    Warnings:   
+    - Alt < _MinAlt is treated as _MinAlt to avoid arithmetic overflow.
+    History:
+    Original code by P.W.Hill, St Andrews
+    Adapted by P.T.Wallace, Starlink, 5 December 1990
+    2002-08-02 ROwen  Converted to Python
+    """
+    if alt is None: return -1
+    
+    _MinAlt = 3.0
+    # secM1 is secant(zd) - 1 where zd = 90-alt
+    secM1 = (1.0 / np.sin(max(_MinAlt, alt)*np.pi/180)) - 1.0
+    return 1.0 + secM1 * (0.9981833 - secM1 * (0.002875 + (0.0008083 * secM1)))
 #==================================================================
 # FUNCTIONS for aperture photometry 
 #==================================================================
@@ -70,7 +111,9 @@ def detect_peaks(image, detection_area = 2):
     neighborhood = np.ones((1+2*detection_area,1+2*detection_area))
     #apply the local maximum filter; all pixel of maximal value in their neighborhood are set to 1
     local_max = sn.maximum_filter(image, footprint=neighborhood)==image
-    #local_max is a mask that contains the peaks we are looking for, but also the background. In order to isolate the peaks we must remove the background from the mask. We create the mask of the background
+    #local_max is a mask that contains the peaks we are looking for, but also the background. 
+    #In order to isolate the peaks we must remove the background from the mask. 
+    #We create the mask of the background
     background = (image==0)
     #a little technicality: we must erode the background in order to successfully subtract it from local_max, otherwise a line will appear along the background border (artifact of the local maximum filter)
     eroded_background = sn.binary_erosion(background, structure=neighborhood, border_value=1)
@@ -210,6 +253,132 @@ def find_stars(image, nb_stars, excluded = [], included = [], detection_area = 2
 
     return xy[:nb_stars,:]
 
+def find_stars_th(image, threshold, excluded = [], included = [], detection_area = 2, saturation = [False,0], margin = 5, text_display = True):
+    """
+    ---------------------
+    Purpose
+    Takes an image and returns the approximate positions of the N brightest stars, N being specified by the user.
+    ---------------------
+    Inputs
+    * image (2D Numpy array) = the data of one FITS image, as obtained for instance by reading one FITS image file with the function astro.get_imagedata().
+    * nb_stars (integer) = the number of stars requested.
+    * threshold (float) = detection limit of pixel value 
+    * excluded (list) = optional argument. List of 4 elements lists, with the form [[x11,x12,y11,y12], ..., [xn1,xn2,yn1,yn2]]. Each element is a small part of the image that will be excluded for the star detection.
+    This optional parameter allows to reject problematic areas in the image (e.g. saturated star(s), artefact(s), moving object(s)..)
+    * included (list) = optional argument. List of 4 integers, with the form [x1,x2,y1,y2]. It defines a subpart of the image where all the stars will be detected.
+    Both excluded and included can be used simultaneously.
+    * detection_area (integer) = optional argument. The object's local maxima are found in a square neighborhood with size (2*detection_area+1)*(2*detection_area+1). Default value is detection_area = 2.
+    * saturation (list) = optional argument. Two elements lists: if saturation[0] is True, the objects with maximum signal >= saturation[1] are disregarded.
+    * margin (integer) = optional argument. The objects having their center closer than margin pixels from the image border are disregarded.
+    * text_display (boolean) = optional argument. If True then some information about the star detection is printed in the console.
+    ---------------------
+    Output (2D Numpy array) = Numpy array with the form [[x1,y1],[x2,y2],...,[xn,yn]], that contains the approximate x and y positions for each star.
+    ---------------------
+    """
+    #--- included ---
+    if len(included)>0:
+        x0, x1, y0, y1 = included
+        im = image[x0:x1,y0:y1]
+    else:
+        im = image
+        x0, y0 = [0,0]
+    
+    #--- searching threshold ---
+    peaks = detect_stars(im, threshold, detection_area = detection_area, saturation = saturation, margin = margin)
+    for area in excluded:
+        x2,x3,y2,y3 = area
+        peaks[max(x2-x0,0):max(x3-x0,0),max(y2-y0,0):max(y3-y0,0)] = 0
+    x, y = np.where(peaks==1)
+    x = x + x0
+    y = y + y0
+    nb = len(x)
+    if text_display:
+        prnlog(" - NUMBER of detected stars: %i" % nb)
+
+    return x, y
+
+def fit_gauss_elliptical(xy, data):
+	"""
+	---------------------
+	Purpose
+	Fitting a star with a 2D elliptical gaussian PSF.
+	---------------------
+	Inputs
+	* xy (list) = list with the form [x,y] where x and y are the integer positions in the complete image of the first pixel (the one with x=0 and y=0) of the small subimage that is used for fitting.
+	* data (2D Numpy array) = small subimage, obtained from the full FITS image by slicing. It must contain a single object : the star to be fitted, placed approximately at the center.
+	---------------------
+	Output (list) = list with 8 elements, in the form [maxi, floor, height, mean_x, mean_y, fwhm_small, fwhm_large, angle]. The list elements are respectively:
+	- maxi is the value of the star maximum signal,
+	- floor is the level of the sky background (fit result),
+	- height is the PSF amplitude (fit result),
+	- mean_x and mean_y are the star centroid x and y positions, on the full image (fit results), 
+	- fwhm_small is the smallest full width half maximum of the elliptical gaussian PSF (fit result) in pixels
+	- fwhm_large is the largest full width half maximum of the elliptical gaussian PSF (fit result) in pixels
+	- angle is the angular direction of the largest fwhm, measured clockwise starting from the vertical direction (fit result) and expressed in degrees. The direction of the smallest fwhm is obtained by adding 90 deg to angle.
+	---------------------
+	"""
+
+	#find starting values
+	maxi = data.max()
+	floor = np.ma.median(data.flatten())
+	height = maxi - floor
+	if height==0.0:				#if star is saturated it could be that median value is 32767 or 65535 --> height=0
+		floor = np.mean(data.flatten())
+		height = maxi - floor
+	
+	mean_x = (np.shape(data)[0]-1)/2
+	mean_y = (np.shape(data)[1]-1)/2
+
+	fwhm = np.sqrt(np.sum((data>floor+height/2.).flatten()))
+	fwhm_1 = fwhm
+	fwhm_2 = fwhm
+	sig_1 = fwhm_1 / (2.*np.sqrt(2.*np.log(2.)))
+	sig_2 = fwhm_2 / (2.*np.sqrt(2.*np.log(2.)))	
+
+	angle = 0.
+
+	p0 = floor, height, mean_x, mean_y, sig_1, sig_2, angle
+
+	#---------------------------------------------------------------------------------
+	#fitting gaussian
+	def gauss(floor, height, mean_x, mean_y, sig_1, sig_2, angle):
+	
+		A = (np.cos(angle)/sig_1)**2. + (np.sin(angle)/sig_2)**2.
+		B = (np.sin(angle)/sig_1)**2. + (np.cos(angle)/sig_2)**2.
+		C = 2.0*np.sin(angle)*np.cos(angle)*(1./(sig_1**2.)-1./(sig_2**2.))
+
+		#do not forget factor 0.5 in exp(-0.5*r**2./sig**2.)	
+		return lambda x,y: floor + height*np.exp(-0.5*(A*((x-mean_x)**2)+B*((y-mean_y)**2)+C*(x-mean_x)*(y-mean_y)))
+
+	def err(p,data):
+		return np.ravel(gauss(*p)(*np.indices(data.shape))-data)
+	
+	p = so.leastsq(err, p0, args=(data), maxfev=1000)
+	p = p[0]
+	
+	#---------------------------------------------------------------------------------
+	#formatting results
+	floor = p[0]
+	height = p[1]
+	mean_x = p[2] + xy[0]
+	mean_y = p[3] + xy[1]
+	
+	#angle gives the direction of the p[4]=sig_1 axis, starting from x (vertical) axis, clockwise in direction of y (horizontal) axis
+	if np.abs(p[4])>np.abs(p[5]):
+
+		fwhm_large = np.abs(p[4]) * (2.*np.sqrt(2.*np.log(2.)))
+		fwhm_small = np.abs(p[5]) * (2.*np.sqrt(2.*np.log(2.)))	
+		angle = np.arctan(np.tan(p[6]))
+			
+	else:	#then sig_1 is the smallest : we want angle to point to sig_y, the largest
+	
+		fwhm_large = np.abs(p[5]) * (2.*np.sqrt(2.*np.log(2.)))
+		fwhm_small = np.abs(p[4]) * (2.*np.sqrt(2.*np.log(2.)))	
+		angle = np.arctan(np.tan(p[6]+np.pi/2.))
+	
+	output = [maxi, floor, height, mean_x, mean_y, fwhm_small, fwhm_large, angle]
+	return output
+
 def fit_moffat_elliptical(xy, data):
     """
     ---------------------
@@ -310,157 +479,100 @@ def cal_magnitude(source, bmed, bvarpix, Ns, Nb, gain=1.0, zeropoint=20.0):
     
     return flx, ferr, mag, merr
 
-#############################################################################
-# ZSCALING
-#############################################################################
-
-MAX_REJECT = 0.5
-MIN_NPIXELS = 5
-GOOD_PIXEL = 0
-BAD_PIXEL = 1
-KREJ = 2.5
-MAX_ITERATIONS = 5
-
-def zscale(image, nsamples=1000, contrast=0.25, bpmask=None, zmask=None):
-    """Implement IRAF zscale algorithm
-    nsamples=1000 and contrast=0.25 are the IRAF display task defaults
-    bpmask and zmask not implemented yet
-    image is a 2-d numpy array
-    returns (z1, z2)
-    """
-
-    # Sample the image
-    samples = zsc_sample (image, nsamples, bpmask, zmask)
-    npix = len(samples)
-    samples.sort()
-    zmin = samples[0]
-    zmax = samples[-1]
-    # For a zero-indexed array
-    center_pixel = (npix - 1) // 2
-    if npix%2 == 1:
-        median = samples[center_pixel]
-    else:
-        median = 0.5 * (samples[center_pixel] + samples[center_pixel + 1])
-
-    #
-    # Fit a line to the sorted array of samples
-    minpix = max(MIN_NPIXELS, int(npix * MAX_REJECT))
-    ngrow = max (1, int (npix * 0.01))
-    ngoodpix, zstart, zslope = zsc_fit_line (samples, npix, KREJ, ngrow,
-                                             MAX_ITERATIONS)
-
-    if ngoodpix < minpix:
-        z1 = zmin
-        z2 = zmax
-    else:
-        if contrast > 0: zslope = zslope / contrast
-        z1 = max (zmin, median - (center_pixel - 1) * zslope)
-        z2 = min (zmax, median + (npix - center_pixel) * zslope)
-    return z1, z2
-
-def zsc_sample (image, maxpix, bpmask=None, zmask=None):
+#==============================================================================
+# Distribution of image pixels
+#==============================================================================
+def dist_gaussian(image, binsize=5.0, cutoff=0.05, PLOT=False):
+    
+    values = image.flatten()
+    minv, maxv = np.min(values), np.max(values)
+    avgv, medv, sigv = sigma_clip(values)
+    
+    nbins = int((maxv - minv) / binsize) + 1
+    xbins = np.array(minv + np.arange(nbins)*binsize + binsize/2)
+    int_values = np.array((values - minv)/binsize, int)
+    ycnts = np.bincount(int_values)
+    # from HOPS functions 
+    # ycnts = np.insert(ycnts, len(ycnts), np.zeros(int(nbins) - len(ycnts)))
+    del values
+    
+    pidx = np.argmax(ycnts)
+    xpeak, ypeak = xbins[pidx], ycnts[pidx]
    
-    # Figure out which pixels to use for the zscale algorithm
-    # Returns the 1-d array samples
-    # Don't worry about the bad pixel mask or zmask for the moment
-    # Sample in a square grid, and return the first maxpix in the sample
-    nc = image.shape[0]
-    nl = image.shape[1]
-    stride = max (1.0, np.sqrt((nc - 1) * (nl - 1) / float(maxpix)))
-    stride = int (stride)
-    samples = image[::stride,::stride].flatten()
-    return samples[:maxpix]
-   
-def zsc_fit_line (samples, npix, krej, ngrow, maxiter):
-
-    #
-    # First re-map indices from -1.0 to 1.0
-    xscale = 2.0 / (npix - 1)
-    xnorm = np.arange(npix)
-    xnorm = xnorm * xscale - 1.0
-
-    ngoodpix = npix
-    minpix = max (MIN_NPIXELS, int (npix*MAX_REJECT))
-    last_ngoodpix = npix + 1
-
-    # This is the mask used in k-sigma clipping.  0 is good, 1 is bad
-    badpix = np.zeros(npix, dtype="int32")
-
-    #
-    #  Iterate
-
-    for niter in range(maxiter):
-
-        if (ngoodpix >= last_ngoodpix) or (ngoodpix < minpix):
-            break
-       
-        # Accumulate sums to calculate straight line fit
-        goodpixels = np.where(badpix == GOOD_PIXEL)
-        sumx = xnorm[goodpixels].sum()
-        sumxx = (xnorm[goodpixels]*xnorm[goodpixels]).sum()
-        sumxy = (xnorm[goodpixels]*samples[goodpixels]).sum()
-        sumy = samples[goodpixels].sum()
-        sum = len(goodpixels[0])
-
-        delta = sum * sumxx - sumx * sumx
-        # Slope and intercept
-        intercept = (sumxx * sumy - sumx * sumxy) / delta
-        slope = (sum * sumxy - sumx * sumy) / delta
-       
-        # Subtract fitted line from the data array
-        fitted = xnorm*slope + intercept
-        flat = samples - fitted
+    fit_g = fitting.LevMarLSQFitter()
+ 
+    vv = np.where((xbins < xpeak + 3*sigv) & (xbins > xpeak - 3*sigv))[0]
+    g_init = models.Gaussian1D(amplitude=ypeak, mean=xpeak, stddev=sigv)
+    g = fit_g(g_init, xbins[vv], ycnts[vv])
+    #print(g.mean.value, g.stddev.value)
     
-        # Compute the k-sigma rejection threshold
-        ngoodpix, mean, sigma = zsc_compute_sigma (flat, badpix, npix)
+    if PLOT:
+        plt.figure()
+        plt.plot(xbins[vv], ycnts[vv], 'ko-')
+        plt.plot(xbins[vv], g(xbins[vv]), 'r-', lw=4, alpha=0.5, \
+                  label='%.1f(%.1f)' % (g.mean.value, g.stddev.value))
+        plt.legend()
+        plt.savefig('g_dist_%i_%i' % (xpeak, sigv))
+        plt.close('all')
     
-        threshold = sigma * krej
-    
-        # Detect and reject pixels further than k*sigma from the fitted line
-        lcut = -threshold
-        hcut = threshold
-        below = np.where(flat < lcut)
-        above = np.where(flat > hcut)
-    
-        badpix[below] = BAD_PIXEL
-        badpix[above] = BAD_PIXEL
-           
-        # Convolve with a kernel of length ngrow
-        kernel = np.ones(ngrow,dtype="int32")
-        badpix = np.convolve(badpix, kernel, mode='same')
-    
-        ngoodpix = len(np.where(badpix == GOOD_PIXEL)[0])
-           
-        niter += 1
-    
-    # Transform the line coefficients back to the X range [0:npix-1]
-    zstart = intercept - slope
-    zslope = slope * xscale
-    
-    return ngoodpix, zstart, zslope
+    return (g.mean.value, g.stddev.value)    
 
-def zsc_compute_sigma (flat, badpix, npix):
+def r_cumulated(image, binsize=5):
     
-    # Compute the rms deviation from the mean of a flattened array.
-    # Ignore rejected pixels
-    # Accumulate sum and sum of squares
-    goodpixels = np.where(badpix == GOOD_PIXEL)
-    sumz = flat[goodpixels].sum()
-    sumsq = (flat[goodpixels]*flat[goodpixels]).sum()
-    ngoodpix = len(goodpixels[0])
-    if ngoodpix == 0:
-        mean = None
-        sigma = None
-    elif ngoodpix == 1:
-        mean = sumz
-        sigma = None
-    else:
-        mean = sumz / ngoodpix
-        temp = sumsq / (ngoodpix - 1) - sumz*sumz / (ngoodpix * (ngoodpix - 1))
-        if temp < 0:
-            sigma = 0.0
-        else:
-            sigma = np.sqrt (temp)
+    values = image.flatten()
+    npix = len(values)
+    minv, maxv = np.min(values), np.max(values)
+    sigv = np.std(values)
     
-    return ngoodpix, mean, sigma
+    nbins = int((maxv - minv) / binsize) + 1
+    xbins = np.array(minv + np.arange(nbins)*binsize + binsize/2)
+    int_values = np.array((values - minv)/binsize, int)
+    ycnts = np.bincount(int_values)    
 
+    
+    pidx = np.argmax(ycnts)
+    xpeak, ypeak = xbins[pidx], ycnts[pidx]
+    
+    clist = np.array([np.sum(ycnts[:(x+1)]) for x in range(len(ycnts))])
+    vv = np.where((clist > npix*0.05) & (clist < npix*0.95))[0]
+    a, b = np.polyfit(xbins[vv], clist[vv], 1)
+    x1, x2 = -b/a, (len(values)-b)/a
+    #plt.figure()
+    #plt.plot(xbins[vv], clist[vv], 'ko-')
+    #plt.plot([x1, x2], [0, len(values)], 'r-', lw=3, alpha=0.5)
+    #plt.savefig('c_dist_%i_%i' % (xpeak, sigv))
+    
+    return x1, x2 
+
+#===============================================================================
+# HOPS codes
+#===============================================================================
+
+def find_centroids(data_array, x_low, x_upper, y_low, y_upper, mean, std, burn_limit, star_std, std_limit):
+
+    x_upper = int(min(x_upper, len(data_array[0])))
+    y_upper = int(min(y_upper, len(data_array)))
+    x_low = int(max(0, x_low))
+    y_low = int(max(0, y_low))
+
+    data_array = np.full_like(data_array[y_low:y_upper + 1, x_low:x_upper + 1],
+                              data_array[y_low:y_upper + 1, x_low:x_upper + 1])
+
+    test = []
+
+    for i in range(-star_std, star_std + 1):
+        for j in range(-star_std, star_std + 1):
+            rolled = np.roll(np.roll(data_array, i, 0), j, 1)
+            test.append(rolled)
+
+    median_test = np.median(test, 0)
+    max_test = np.max(test, 0)
+    del test
+    stars = np.where((data_array < burn_limit) & (data_array > mean + std_limit * std) & (max_test == data_array)
+                     & (median_test > mean + 2 * std))
+    del data_array
+
+    stars = [stars[1] + x_low, stars[0] + y_low]
+    stars = np.swapaxes(stars, 0, 1)
+
+    return stars

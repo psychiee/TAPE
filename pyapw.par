@@ -1,20 +1,20 @@
-WORKDIR   ../200102-XO-3b
-BINNING   1         # (APPHOT)BINNING option of CCD images for processing 
-STARBOX   40        # (APPHOT)box half-size for photometry [pixel]
-NSTARS    75        # (APPHOT)the number of stars to find 
-FWHMCUT   3,20      # (APPHOT)FWHM lower/upper limit for filtering non-stars [pixel]
-SATU      63000     # (APPHOT)saturation level limit for filtering [ADU]
-PHOTAPER  10,20,30  # (APPHOT)(NO_SPACE)apertures for photometry [pixel]
-SKYANNUL  30,34     # (APPHOT)(NO_SPACE)sky-annulus for background [pixel]
-SUBPIXEL  1         # (APPHOT)the division number for subpixel method 
-LOGFILE   wobs.log  # (APPHOT)log file name for LC processing
-STARPLOT  0         # (APPHOT)flag for plotting the diagram for each star 
-PSCALE    0.464     # (APPHOT)pixel scale in stellar profile plot 0.3867,0.464
+WORKDIR   ./180326-HAT-P-12b
+BINNING   1            # (APPHOT)BINNING option of CCD images for processing 
+STARBOX   40           # (APPHOT)box half-size for photometry [pixel]
+THRES     5            # (APPHOT)n-sigma threshold for finding stars 
+FWHMCUT   3,20         # (APPHOT)FWHM lower/upper limit for filtering non-stars [pixel]
+SATU      60000        # (APPHOT)saturation level limit for filtering [ADU]
+PHOTAPER  10,20,30     # (APPHOT)(NO_SPACE)apertures for photometry [pixel]
+SKYANNUL  30,34        # (APPHOT)(NO_SPACE)sky-annulus for background [pixel]
+SUBPIXEL  1            # (APPHOT)the division number for subpixel method 
+LOGFILE   wobs.log     # (APPHOT)log file name for LC processing
+STARPLOT  0            # (APPHOT)flag for plotting the diagram for each star 
+PSCALE    0.464        # (APPHOT)pixel scale in stellar profile plot 0.3867,0.464
 APERUSED  2            # (TIMESERIES) index of aperture(in PHOTAPER) for LC
 SHIFTPLOT 1            # (TIMESERIES) flag for plotting all shift-images
-OBSDATE   200102       # (TIMESERIES) observation date
-TARGETNAM XO-3b        # (TIMESERIES) target name  
-TARGETNUM 36           # (TIMESERIES) target star numbers in finding-chart 
-COMPNUMS  31,46,67     # (TIMESERIES) (NOSPACE) comparison star numbers
+OBSDATE   180326       # (TIMESERIES) observation date
+TARGETNAM HAT-P-12b    # (TIMESERIES) target name  
+TARGETNUM 13           # (TIMESERIES) target star numbers in finding-chart 
+COMPNUMS  10,17,22     # (TIMESERIES) (NOSPACE) comparison star numbers
 CHKSIG    0.02         # (TIMESERIES) STD checking criteria for LC test
-CHKDELM   10           # (TIMESERIES) DEL_MAG checking criteria for LC test
+CHKDELM   3            # (TIMESERIES) DEL_MAG checking criteria for LC test
