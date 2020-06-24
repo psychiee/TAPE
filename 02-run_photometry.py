@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt 
 from matplotlib.patches import Wedge, Circle
 from astropy.io import fits
-from photlib import read_params, helio_JD, find_stars_th, dist_gaussian, \
+from photlib import read_params, helio_jd, find_stars_th,  \
     fit_gauss_elliptical, cal_magnitude, sigma_clip, prnlog, airmass
 
 # READ paramter file 
@@ -29,6 +29,7 @@ os.chdir(WORKDIR)
 # CCD/Optics parameters 
 BINNING = int(par['BINNING'])
 PSCALE = float(par['PSCALE'])
+EGAIN = float(par['EGAIN'])
 # Photometry parameters
 BOX = int(par['STARBOX'])    # Box size for photometry and centroid
 PHOT_APER = np.array(par['PHOTAPER'].split(','), float)   # Radius of aperture
@@ -91,14 +92,23 @@ for i, fname in enumerate(flist):
     EXPTIME = hdr['EXPTIME']
     FILTER = hdr['FILTER']
     HJD = hdr.get('HJD')
-    if HJD is None: 
-        RA = hdr['RA'] 
-        Dec = hdr['Dec'] 
-        HJD = helio_JD(DATEOBS, RA, Dec, exptime=EXPTIME)
+    if HJD is None:
+        try:
+            RA = hdr['RA']
+            Dec = hdr['Dec']
+            HJD = helio_jd(DATEOBS, RA, Dec, exptime=EXPTIME)
+        except:
+            HJD = 0
     AIRMASS = hdr.get('AIRMASS')
-    if AIRMASS is None: AIRMASS = airmass(hdr.get('ALT'))
-    GAIN = hdr.get('EGAIN')
-    if GAIN is None: GAIN = 1
+    if AIRMASS is None:
+        try:
+            AIRMASS = airmass(hdr.get('ALT'))
+        except:
+            AIRMASS = 0
+    try:
+        GAIN = hdr['EGAIN']
+    except:
+        GAIN = EGAIN
     # DISPLAY
     prnlog('#RUN: %i / %i ' % (i+1, NFRAME))
     prnlog('#IMAGE/DATE-OBS: %s [%i,%i] %s' % (fidx, nx, ny, DATEOBS))
@@ -201,14 +211,12 @@ for i, fname in enumerate(flist):
             flxpixels = subdata[rsq_sub < (PHOT_APER[k])**2].flatten()
             ssum = np.sum(flxpixels) 
             scnt = float(len(flxpixels)) / float(SUBPIXEL**2)
-            #----------------------------------------------------------------
+
             # CALC. the total flux and magnitude of the star 
-            #----------------------------------------------------------------
-            flx, ferr, mag, merr = \
-               cal_magnitude(ssum, bmed, bvar, scnt, bcnt, gain=1)
+            flx, ferr, mag, merr = cal_magnitude(ssum, bmed, bvar, scnt, bcnt, gain=GAIN)
             mag = mag + 2.5*np.log10(EXPTIME)  
             flx, ferr = flx/EXPTIME, ferr/EXPTIME
-            
+
             # SAVE into the list 
             aflx.append(flx)
             aferr.append(ferr)

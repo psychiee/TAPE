@@ -14,9 +14,10 @@ from astropy.stats import sigma_clipped_stats
 from astropy.modeling import models, fitting
 import matplotlib.pyplot as plt 
 import time 
-#from photutils import DAOStarFinder  
+# from photutils import DAOStarFinder
 
 LAT, LON, H = 34.5261362, 127.4470482, 81.35789
+
 
 def prnlog(text):
     with open('system.log', 'a') as f:
@@ -24,6 +25,7 @@ def prnlog(text):
     print(text)
     return 
         
+
 def read_params():
     f = open('pyapw.par', 'r')
     par = {}
@@ -31,6 +33,7 @@ def read_params():
         tmp = line.split()
         par.update({tmp[0]:tmp[1]})
     return par 
+
 
 def sigma_clip1(xx, lower=3, upper=3):
     mxx = np.ma.masked_array(xx)
@@ -42,27 +45,30 @@ def sigma_clip1(xx, lower=3, upper=3):
         mxx.mask = mask
     return np.mean(mxx), np.std(mxx)
 
+
 def sigma_clip2(xx, lower=3, upper=3):
-    '''
+    """
     OUTPUT: average, median, stddev
-    '''
+    """
     return sigma_clipped_stats(xx, sigma_lower=lower, sigma_upper=upper)
 
+
 def sigma_clip3(xx, lower=3, upper=3):
-    '''
+    """
     OUTPUT: average, median, stddev
-    '''
+    """
     mxx, _, _ = ss.sigmaclip(xx, lower, upper)
     return np.mean(mxx), np.median(mxx), np.std(mxx) 
+
 
 def sigma_clip(xx, lower=3, upper=3):
     return sigma_clip3(xx)
 
 
-def helio_JD(DATEOBS, RA, Dec, exptime=0):
-    objcoo = apcoord.SkyCoord(RA, Dec, unit=('hourangle', 'deg'), frame='fk5')
+def helio_jd(dateobs, ra, dec, exptime=0):
+    objcoo = apcoord.SkyCoord(ra, dec, unit=('hourangle', 'deg'), frame='fk5')
     doao = apcoord.EarthLocation.from_geodetic(LON, LAT, H)
-    times = aptime.Time(DATEOBS, format='isot', scale='utc', location=doao)
+    times = aptime.Time(dateobs, format='isot', scale='utc', location=doao)
     dt = aptime.TimeDelta(exptime / 2.0, format='sec')
     times = times + dt
     # ltt_bary = times.light_travel_time(objcoo)
@@ -71,6 +77,7 @@ def helio_JD(DATEOBS, RA, Dec, exptime=0):
     times_helio = times.utc + ltt_helio
 
     return times_helio.jd
+
 
 def airmass(alt):
     """Computes the airmass at a given altitude.
@@ -90,10 +97,13 @@ def airmass(alt):
     # secM1 is secant(zd) - 1 where zd = 90-alt
     secM1 = (1.0 / np.sin(max(_MinAlt, alt)*np.pi/180)) - 1.0
     return 1.0 + secM1 * (0.9981833 - secM1 * (0.002875 + (0.0008083 * secM1)))
-#==================================================================
+
+######################################################
 # FUNCTIONS for aperture photometry 
-#==================================================================
-def detect_peaks(image, detection_area = 2):
+######################################################
+
+
+def detect_peaks(image, detection_area=2):
     """
     ---------------------
     Purpose
@@ -108,17 +118,18 @@ def detect_peaks(image, detection_area = 2):
     ---------------------
     """
     # define an 8-connected neighborhood --> image dimensionality is 2 + there are 8 neighbors for a single pixel
-    neighborhood = np.ones((1+2*detection_area,1+2*detection_area))
-    #apply the local maximum filter; all pixel of maximal value in their neighborhood are set to 1
-    local_max = sn.maximum_filter(image, footprint=neighborhood)==image
-    #local_max is a mask that contains the peaks we are looking for, but also the background. 
-    #In order to isolate the peaks we must remove the background from the mask. 
-    #We create the mask of the background
-    background = (image==0)
-    #a little technicality: we must erode the background in order to successfully subtract it from local_max, otherwise a line will appear along the background border (artifact of the local maximum filter)
+    neighborhood = np.ones((1+2*detection_area, 1+2*detection_area))
+    # apply the local maximum filter; all pixel of maximal value in their neighborhood are set to 1
+    local_max = sn.maximum_filter(image, footprint=neighborhood) == image
+    # ocal_max is a mask that contains the peaks we are looking for, but also the background.
+    # In order to isolate the peaks we must remove the background from the mask.
+    # We create the mask of the background
+    background = (image == 0)
+    # a little technicality: we must erode the background in order to successfully subtract it from local_max,
+    # otherwise a line will appear along the background border (artifact of the local maximum filter)
     eroded_background = sn.binary_erosion(background, structure=neighborhood, border_value=1)
-    #we obtain the final mask, containing only peaks, by removing the background from the local_max mask
-    #detected_peaks = local_max - eroded_background
+    # we obtain the final mask, containing only peaks, by removing the background from the local_max mask
+    # detected_peaks = local_max - eroded_background
     detected_peaks = np.logical_xor(local_max, eroded_background)
     return detected_peaks
 
@@ -146,16 +157,16 @@ def detect_stars(image, threshold, detection_area = 2, saturation = [False,0], m
     """
     sigmafilter = 1
 
-    #--- threshold ---
-    imageT = image>=threshold
+    # --- threshold ---
+    imageT = image >= threshold
 
-    #--- smooth threshold, mask and filter initial image ---
+    # --- smooth threshold, mask and filter initial image ---
     neighborhood = sn.generate_binary_structure(2,1)
     imageT = sn.binary_erosion(imageT, structure=neighborhood, border_value=1)
     imageT = sn.binary_dilation(imageT, structure=neighborhood, border_value=1)
     imageF = sn.filters.gaussian_filter(imageT*image,sigmafilter)
 
-    #--- find local max ---
+    # --- find local max ---
     peaks = detect_peaks(imageF, detection_area = detection_area)
     if isinstance(margin,list):
         peaks[-margin[0]:,:]=0
@@ -168,14 +179,14 @@ def detect_stars(image, threshold, detection_area = 2, saturation = [False,0], m
         peaks[:,-margin:]=0
         peaks[:,:margin]=0
 
-    #--- removes too bright stars (possibly saturated) ---
+    # --- removes too bright stars (possibly saturated) ---
     if saturation[0]:
         peaks = peaks * (image<saturation[1])
     
     return peaks
 
     
-def find_stars(image, nb_stars, excluded = [], included = [], detection_area = 2, saturation = [False,0], margin = 5, text_display = True):
+def find_stars(image, nb_stars, excluded=[], included=[], detection_area=2, saturation=[False,0], margin=5, text_display=True):
     """
     ---------------------
     Purpose
@@ -201,7 +212,7 @@ def find_stars(image, nb_stars, excluded = [], included = [], detection_area = 2
         print ("--- detecting stars ---")
         print ("threshold, nb of detected stars:")
 
-    #--- included ---
+    # --- included ---
     if len(included)>0:
         x0, x1, y0, y1 = included
         im = image[x0:x1,y0:y1]
@@ -209,12 +220,12 @@ def find_stars(image, nb_stars, excluded = [], included = [], detection_area = 2
         im = image
         x0, y0 = [0,0]
     
-    #--- get subimage information ---
+    # --- get subimage information ---
     maxi = np.max(im.flatten())
-    #median = stats.get_median(im)[0]
+    # median = stats.get_median(im)[0]
     medi = np.median(im)
         
-    #--- searching threshold ---
+    # --- searching threshold ---
     th = medi + 0.1*maxi
     peaks = detect_stars(im, th, detection_area = detection_area, saturation = saturation, margin = margin)
     for area in excluded:
@@ -253,7 +264,8 @@ def find_stars(image, nb_stars, excluded = [], included = [], detection_area = 2
 
     return xy[:nb_stars,:]
 
-def find_stars_th(image, threshold, excluded = [], included = [], detection_area = 2, saturation = [False,0], margin = 5, text_display = True):
+
+def find_stars_th(image, threshold, excluded=[], included=[], detection_area=2, saturation=[False,0], margin=5, text_display=True):
     """
     ---------------------
     Purpose
@@ -275,7 +287,7 @@ def find_stars_th(image, threshold, excluded = [], included = [], detection_area
     Output (2D Numpy array) = Numpy array with the form [[x1,y1],[x2,y2],...,[xn,yn]], that contains the approximate x and y positions for each star.
     ---------------------
     """
-    #--- included ---
+    # --- included ---
     if len(included)>0:
         x0, x1, y0, y1 = included
         im = image[x0:x1,y0:y1]
@@ -283,7 +295,7 @@ def find_stars_th(image, threshold, excluded = [], included = [], detection_area
         im = image
         x0, y0 = [0,0]
     
-    #--- searching threshold ---
+    # --- searching threshold ---
     peaks = detect_stars(im, threshold, detection_area = detection_area, saturation = saturation, margin = margin)
     for area in excluded:
         x2,x3,y2,y3 = area
@@ -297,87 +309,91 @@ def find_stars_th(image, threshold, excluded = [], included = [], detection_area
 
     return x, y
 
+
 def fit_gauss_elliptical(xy, data):
-	"""
-	---------------------
-	Purpose
-	Fitting a star with a 2D elliptical gaussian PSF.
-	---------------------
-	Inputs
-	* xy (list) = list with the form [x,y] where x and y are the integer positions in the complete image of the first pixel (the one with x=0 and y=0) of the small subimage that is used for fitting.
-	* data (2D Numpy array) = small subimage, obtained from the full FITS image by slicing. It must contain a single object : the star to be fitted, placed approximately at the center.
-	---------------------
-	Output (list) = list with 8 elements, in the form [maxi, floor, height, mean_x, mean_y, fwhm_small, fwhm_large, angle]. The list elements are respectively:
-	- maxi is the value of the star maximum signal,
-	- floor is the level of the sky background (fit result),
-	- height is the PSF amplitude (fit result),
-	- mean_x and mean_y are the star centroid x and y positions, on the full image (fit results), 
-	- fwhm_small is the smallest full width half maximum of the elliptical gaussian PSF (fit result) in pixels
-	- fwhm_large is the largest full width half maximum of the elliptical gaussian PSF (fit result) in pixels
-	- angle is the angular direction of the largest fwhm, measured clockwise starting from the vertical direction (fit result) and expressed in degrees. The direction of the smallest fwhm is obtained by adding 90 deg to angle.
-	---------------------
-	"""
+    """
+    ---------------------
+    Purpose
+    Fitting a star with a 2D elliptical gaussian PSF.
+    ---------------------
+    Inputs
+    * xy (list) = list with the form [x,y] where x and y are the integer positions in the complete image of the first pixel (the one with x=0 and y=0) of the small subimage that is used for fitting.
+    * data (2D Numpy array) = small subimage, obtained from the full FITS image by slicing. It must contain a single object : the star to be fitted, placed approximately at the center.
+    ---------------------
+    Output (list) = list with 8 elements, in the form [maxi, floor, height, mean_x, mean_y, fwhm_small, fwhm_large, angle]. The list elements are respectively:
+    - maxi is the value of the star maximum signal,
+    - floor is the level of the sky background (fit result),
+    - height is the PSF amplitude (fit result),
+    - mean_x and mean_y are the star centroid x and y positions, on the full image (fit results),
+    - fwhm_small is the smallest full width half maximum of the elliptical gaussian PSF (fit result) in pixels
+    - fwhm_large is the largest full width half maximum of the elliptical gaussian PSF (fit result) in pixels
+    - angle is the angular direction of the largest fwhm, measured clockwise starting from the vertical direction (fit result) and expressed in degrees. The direction of the smallest fwhm is obtained by adding 90 deg to angle.
+    ---------------------
+    """
 
-	#find starting values
-	maxi = data.max()
-	floor = np.ma.median(data.flatten())
-	height = maxi - floor
-	if height==0.0:				#if star is saturated it could be that median value is 32767 or 65535 --> height=0
-		floor = np.mean(data.flatten())
-		height = maxi - floor
-	
-	mean_x = (np.shape(data)[0]-1)/2
-	mean_y = (np.shape(data)[1]-1)/2
+    # find starting values
+    maxi = data.max()
+    floor = np.ma.median(data.flatten())
+    height = maxi - floor
+    # if star is saturated it could be that median value is 32767 or 65535 --> height=0
+    if height == 0.0:
+        floor = np.mean(data.flatten())
+        height = maxi - floor
 
-	fwhm = np.sqrt(np.sum((data>floor+height/2.).flatten()))
-	fwhm_1 = fwhm
-	fwhm_2 = fwhm
-	sig_1 = fwhm_1 / (2.*np.sqrt(2.*np.log(2.)))
-	sig_2 = fwhm_2 / (2.*np.sqrt(2.*np.log(2.)))	
+    mean_x = (np.shape(data)[0]-1)/2
+    mean_y = (np.shape(data)[1]-1)/2
 
-	angle = 0.
+    fwhm = np.sqrt(np.sum((data>floor+height/2.).flatten()))
+    fwhm_1 = fwhm
+    fwhm_2 = fwhm
+    sig_1 = fwhm_1 / (2.*np.sqrt(2.*np.log(2.)))
+    sig_2 = fwhm_2 / (2.*np.sqrt(2.*np.log(2.)))
 
-	p0 = floor, height, mean_x, mean_y, sig_1, sig_2, angle
+    angle = 0.
 
-	#---------------------------------------------------------------------------------
-	#fitting gaussian
-	def gauss(floor, height, mean_x, mean_y, sig_1, sig_2, angle):
-	
-		A = (np.cos(angle)/sig_1)**2. + (np.sin(angle)/sig_2)**2.
-		B = (np.sin(angle)/sig_1)**2. + (np.cos(angle)/sig_2)**2.
-		C = 2.0*np.sin(angle)*np.cos(angle)*(1./(sig_1**2.)-1./(sig_2**2.))
+    p0 = floor, height, mean_x, mean_y, sig_1, sig_2, angle
 
-		#do not forget factor 0.5 in exp(-0.5*r**2./sig**2.)	
-		return lambda x,y: floor + height*np.exp(-0.5*(A*((x-mean_x)**2)+B*((y-mean_y)**2)+C*(x-mean_x)*(y-mean_y)))
+    # ---------------------------------------------------------------------------------
+    # fitting gaussian
+    def gauss(floor, height, mean_x, mean_y, sig_1, sig_2, angle):
 
-	def err(p,data):
-		return np.ravel(gauss(*p)(*np.indices(data.shape))-data)
-	
-	p = so.leastsq(err, p0, args=(data), maxfev=1000)
-	p = p[0]
-	
-	#---------------------------------------------------------------------------------
-	#formatting results
-	floor = p[0]
-	height = p[1]
-	mean_x = p[2] + xy[0]
-	mean_y = p[3] + xy[1]
-	
-	#angle gives the direction of the p[4]=sig_1 axis, starting from x (vertical) axis, clockwise in direction of y (horizontal) axis
-	if np.abs(p[4])>np.abs(p[5]):
+        A = (np.cos(angle)/sig_1)**2. + (np.sin(angle)/sig_2)**2.
+        B = (np.sin(angle)/sig_1)**2. + (np.cos(angle)/sig_2)**2.
+        C = 2.0*np.sin(angle)*np.cos(angle)*(1./(sig_1**2.)-1./(sig_2**2.))
 
-		fwhm_large = np.abs(p[4]) * (2.*np.sqrt(2.*np.log(2.)))
-		fwhm_small = np.abs(p[5]) * (2.*np.sqrt(2.*np.log(2.)))	
-		angle = np.arctan(np.tan(p[6]))
-			
-	else:	#then sig_1 is the smallest : we want angle to point to sig_y, the largest
-	
-		fwhm_large = np.abs(p[5]) * (2.*np.sqrt(2.*np.log(2.)))
-		fwhm_small = np.abs(p[4]) * (2.*np.sqrt(2.*np.log(2.)))	
-		angle = np.arctan(np.tan(p[6]+np.pi/2.))
-	
-	output = [maxi, floor, height, mean_x, mean_y, fwhm_small, fwhm_large, angle]
-	return output
+        #do not forget factor 0.5 in exp(-0.5*r**2./sig**2.)
+        return lambda x,y: floor + height*np.exp(-0.5*(A*((x-mean_x)**2)+B*((y-mean_y)**2)+C*(x-mean_x)*(y-mean_y)))
+
+    def err(p,data):
+        return np.ravel(gauss(*p)(*np.indices(data.shape))-data)
+
+    p = so.leastsq(err, p0, args=(data), maxfev=1000)
+    p = p[0]
+
+    # ---------------------------------------------------------------------------------
+    # formatting results
+    floor = p[0]
+    height = p[1]
+    mean_x = p[2] + xy[0]
+    mean_y = p[3] + xy[1]
+
+    # angle gives the direction of the p[4]=sig_1 axis, starting from x (vertical) axis,
+    # clockwise in direction of y (horizontal) axis
+    if np.abs(p[4])>np.abs(p[5]):
+
+        fwhm_large = np.abs(p[4]) * (2.*np.sqrt(2.*np.log(2.)))
+        fwhm_small = np.abs(p[5]) * (2.*np.sqrt(2.*np.log(2.)))
+        angle = np.arctan(np.tan(p[6]))
+    # then sig_1 is the smallest : we want angle to point to sig_y, the largest
+    else:
+
+        fwhm_large = np.abs(p[5]) * (2.*np.sqrt(2.*np.log(2.)))
+        fwhm_small = np.abs(p[4]) * (2.*np.sqrt(2.*np.log(2.)))
+        angle = np.arctan(np.tan(p[6]+np.pi/2.))
+
+    output = [maxi, floor, height, mean_x, mean_y, fwhm_small, fwhm_large, angle]
+    return output
+
 
 def fit_moffat_elliptical(xy, data):
     """
@@ -401,12 +417,12 @@ def fit_moffat_elliptical(xy, data):
     ---------------------
     """
     
-    #---------------------------------------------------------------------------------
-    #find starting values
+    # ---------------------------------------------------------------------------------
+    # find starting values
     maxi = data.max()
     floor = np.ma.median(data.flatten())
     height = maxi - floor
-    #if star is saturated it could be that median value is 32767 or 65535 --> height=0
+    # if star is saturated it could be that median value is 32767 or 65535 --> height=0
     if height==0.0: 
         floor = np.mean(data.flatten())
         height = maxi - floor
@@ -423,8 +439,8 @@ def fit_moffat_elliptical(xy, data):
     
     p0 = floor, height, mean_x, mean_y, fwhm_1, fwhm_2, angle, beta
 
-    #---------------------------------------------------------------------------------
-    #fitting gaussian
+    # ---------------------------------------------------------------------------------
+    # fitting gaussian
     def moffat(floor, height, mean_x, mean_y, fwhm_1, fwhm_2, angle, beta):
         beta = abs(beta)
         alpha_1 = 0.5*fwhm_1/np.sqrt(2**(1/beta)-1)
@@ -442,26 +458,29 @@ def fit_moffat_elliptical(xy, data):
     p = so.leastsq(err, p0, args=(data), maxfev=1000)
     p = p[0]
     
-    #---------------------------------------------------------------------------------
-    #formatting results
+    # ---------------------------------------------------------------------------------
+    # formatting results
     floor = p[0]
     height = p[1]
     mean_x = p[2] + xy[0]
     mean_y = p[3] + xy[1]
     beta = p[7]
     
-    #angle gives the direction of the p[4]=fwhm_1 axis, starting from x (vertical) axis, clockwise in direction of y (horizontal) axis
+    # angle gives the direction of the p[4]=fwhm_1 axis, starting from x (vertical) axis,
+    # clockwise in direction of y (horizontal) axis
     if np.abs(p[4])>np.abs(p[5]):
         fwhm_large = np.abs(p[4])
         fwhm_small = np.abs(p[5])
         angle = np.arctan(np.tan(p[6]))
-    else:    #then fwhm_1 is the smallest : we want angle to point to sig_y, the largest
+    # then fwhm_1 is the smallest : we want angle to point to sig_y, the largest
+    else:
         fwhm_large = np.abs(p[5])
         fwhm_small = np.abs(p[4])
         angle = np.arctan(np.tan(p[6]+np.pi/2.))
 
     output = [maxi, floor, height, mean_x, mean_y, fwhm_small, fwhm_large, angle, beta]
     return output
+
 
 def cal_magnitude(source, bmed, bvarpix, Ns, Nb, gain=1.0, zeropoint=20.0):
     
@@ -479,9 +498,11 @@ def cal_magnitude(source, bmed, bvarpix, Ns, Nb, gain=1.0, zeropoint=20.0):
     
     return flx, ferr, mag, merr
 
-#==============================================================================
-# Distribution of image pixels
-#==============================================================================
+###################################################################
+# HOPS code for distribution of image pixels, finding stars
+###################################################################
+
+
 def dist_gaussian(image, binsize=5.0, cutoff=0.05, PLOT=False):
     
     values = image.flatten()
@@ -504,7 +525,7 @@ def dist_gaussian(image, binsize=5.0, cutoff=0.05, PLOT=False):
     vv = np.where((xbins < xpeak + 3*sigv) & (xbins > xpeak - 3*sigv))[0]
     g_init = models.Gaussian1D(amplitude=ypeak, mean=xpeak, stddev=sigv)
     g = fit_g(g_init, xbins[vv], ycnts[vv])
-    #print(g.mean.value, g.stddev.value)
+    # print(g.mean.value, g.stddev.value)
     
     if PLOT:
         plt.figure()
@@ -515,7 +536,8 @@ def dist_gaussian(image, binsize=5.0, cutoff=0.05, PLOT=False):
         plt.savefig('g_dist_%i_%i' % (xpeak, sigv))
         plt.close('all')
     
-    return (g.mean.value, g.stddev.value)    
+    return g.mean.value, g.stddev.value
+
 
 def r_cumulated(image, binsize=5):
     
@@ -529,7 +551,6 @@ def r_cumulated(image, binsize=5):
     int_values = np.array((values - minv)/binsize, int)
     ycnts = np.bincount(int_values)    
 
-    
     pidx = np.argmax(ycnts)
     xpeak, ypeak = xbins[pidx], ycnts[pidx]
     
@@ -537,16 +558,13 @@ def r_cumulated(image, binsize=5):
     vv = np.where((clist > npix*0.05) & (clist < npix*0.95))[0]
     a, b = np.polyfit(xbins[vv], clist[vv], 1)
     x1, x2 = -b/a, (len(values)-b)/a
-    #plt.figure()
-    #plt.plot(xbins[vv], clist[vv], 'ko-')
-    #plt.plot([x1, x2], [0, len(values)], 'r-', lw=3, alpha=0.5)
-    #plt.savefig('c_dist_%i_%i' % (xpeak, sigv))
+    # plt.figure()
+    # plt.plot(xbins[vv], clist[vv], 'ko-')
+    # plt.plot([x1, x2], [0, len(values)], 'r-', lw=3, alpha=0.5)
+    # plt.savefig('c_dist_%i_%i' % (xpeak, sigv))
     
     return x1, x2 
 
-#===============================================================================
-# HOPS codes
-#===============================================================================
 
 def find_centroids(data_array, x_low, x_upper, y_low, y_upper, mean, std, burn_limit, star_std, std_limit):
 
