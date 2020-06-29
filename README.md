@@ -70,3 +70,29 @@ CHKDELM   3            # (TIMESERIES) DEL_MAG checking criteria for LC test
 - CHKSIG: cut-off sigma value in light curve to find a proper comparison star (for 05-chek_comps.py)
 - CHKDELM: cut-off delta magnitude in light curve to find a proper comparison star (for 05-chek_comps.py)
 
+### Run PyAPW codes
+- Run 01-run_ccdproc.py 
+  - Make the list for image processing. (wbias.list, wdark100s.list, wflatB.list, ... )
+  - Generate master BIAS, DARK for each exposure, FLAT for each filter.
+  - Do image preprocessing of the object files. 
+- Run 02-run_photometry.py 
+  - Do aperture photometry for each image. 
+  - Save the magnitudes and fluxes of each star in each frame. (*.apw)
+- Run 03-make_timeseries.py    
+  - Do matching process for each frame.
+  - Generate the finding chart with the star number (*-chart.png)
+  - Find the target star and modify TARGETNUM in the pyapw.par
+  - Adjust the CHKSIG, CHKDELM in the pyapw.par for the automatic determination of comparisons
+- Run 05-chek_comps.py    
+  - Generate the light curves of proper comparisons by the criteria of CHKSIG, CHKDELM.
+  - Determine the comparison stars using the plots. 
+  - Modify the COMPNUMS in the pyapw.par.  
+- Run 06-plot_lightcurve.py
+  - Generate the light curve in flux, using the COMPNUMS stars
+  - Save the light curve data in the *.dat file. 
+  - Generate the finding chart with the target and comparisons.
+  - Generate the light curve for each comparison. 
+  - Generate the magnitude difference between the comparisons for verification. 
+  
+   
+       
