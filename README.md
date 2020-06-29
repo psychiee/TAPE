@@ -65,8 +65,8 @@ CHKDELM   3            # (TIMESERIES) DEL_MAG checking criteria for LC test
 - APERUSED: order of the applying aperture in the aperture size list PHOTAPER 
 - SHIFTPLOT: ON/OFF matching result plots
 - OBSDATE: observation date and target name for making files and plots
-- TARGETNUM: target number in the finding-chart (XXXXXX-YYYYYY-chart.png)
-- COMPNUMS: numbers of comparison stars for differential photometry in the finding-chart (XXXXXX-YYYYYY-chart.png)
-- CHKSIG: cut-off sigma value in light curve to find a proper comparison star
-- CHKDELM: cut-off delta magnitude in light curve to find a proper comparison star
- 
+- TARGETNUM: target number in the finding-chart (XXXXXX-YYY-chart.png)
+- COMPNUMS: numbers of comparison stars for differential photometry in the finding-chart (XXXXXX-YYY-chart.png)
+- CHKSIG: cut-off sigma value in light curve to find a proper comparison star (for 05-chek_comps.py)
+- CHKDELM: cut-off delta magnitude in light curve to find a proper comparison star (for 05-chek_comps.py)
+
