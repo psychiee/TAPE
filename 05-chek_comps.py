@@ -121,7 +121,7 @@ for j in range(1,len(FLX[0,:])+1):
     ax1.set_title('%s Light Curve (MAG-%03d) JD0=%d' % (WNAME, j,JD0))
     ax1.grid()
     ax1.legend()
-    fig1.savefig('w%s-%s-CHK-%03d' % (WNAME,FILTER,j,))
+    fig1.savefig('w%s-%s-CHK-%03d.png' % (WNAME,FILTER,j,))
     fig1.clf()
 plt.close('all')
 

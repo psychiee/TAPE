@@ -180,7 +180,7 @@ ax.grid()
 ax.legend(fontsize=10,loc='upper right', ncol=3, numpoints=1)
 ax.set_title('w%s Shift Plot' % WNAME)
 prnlog('WRITE TO w%s-shift.png...' % WNAME)
-fig.savefig('w%s-shift' % WNAME)
+fig.savefig('w%s-shift.png' % WNAME)
 plt.close('all')
 
 # READ AND PLOT the finding-chart
