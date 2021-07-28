@@ -14,10 +14,8 @@ from astropy.stats import sigma_clipped_stats
 from astropy.modeling import models, fitting
 import matplotlib.pyplot as plt 
 import time 
-# from photutils import DAOStarFinder
 
-LAT, LON, H = 34.5261362, 127.4470482, 81.35789
-
+#LAT, LON, H = 34.5261362, 127.4470482, 81.35789
 
 def prnlog(text):
     with open('system.log', 'a') as f:
@@ -27,7 +25,7 @@ def prnlog(text):
         
 
 def read_params():
-    f = open('pyapw.par', 'r')
+    f = open('tape.par', 'r')
     par = {}
     for line in f: 
         tmp = line.split()
@@ -65,7 +63,7 @@ def sigma_clip(xx, lower=3, upper=3):
     return sigma_clip3(xx)
 
 
-def helio_jd(dateobs, ra, dec, exptime=0):
+def helio_jd(dateobs, ra, dec, exptime=0, LAT=0, LON=0, H=0):
     objcoo = apcoord.SkyCoord(ra, dec, unit=('hourangle', 'deg'), frame='fk5')
     doao = apcoord.EarthLocation.from_geodetic(LON, LAT, H)
     times = aptime.Time(dateobs, format='isot', scale='utc', location=doao)

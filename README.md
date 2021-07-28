@@ -1,5 +1,5 @@
-# PyAPW
-## Python Aperture Photometry Tool for Students
+# TAPE
+## Tools for the Aperture Photometry of a transiting Exoplanet
 
 Perform the aperture photometry for time-series observations. (e.g. exoplanet transit events, variable stars )
 
@@ -10,12 +10,12 @@ The Goal of Project
   
 ## Components
 - photlib.py (functions for image processing and photometry)  
-- pyapw.par (input parameters for running)
+- tape.par (input parameters for running)
 - 01-run_ccdproc.py (run automatic image preprocessing)
 - 02-run_photometry.py (run aperture photometry)
 - 03-make_timeseries.py (run star-matching and generate the time-series of magnitudes)
-- 05-chek_comps.py (find the comparisons for differential photometry)
-- 06-plot_lightcurve.py (draw the light curves [flux] for the selected comparisons)
+- 04-chek_comps.py (find the comparisons for differential photometry)
+- 05-plot_lightcurve.py (draw the light curves [flux] for the selected comparisons)
  
 ## How to use 
  
@@ -83,11 +83,11 @@ CHKDELM   3            # (TIMESERIES) DEL_MAG checking criteria for LC test
   - Generate the finding chart with the star number (*-chart.png)
   - Find the target star and modify TARGETNUM in the pyapw.par
   - Adjust the CHKSIG, CHKDELM in the pyapw.par for the automatic determination of comparisons
-- Run 05-chek_comps.py    
+- Run 04-chek_comps.py    
   - Generate the light curves of proper comparisons by the criteria of CHKSIG, CHKDELM.
   - Determine the comparison stars using the plots. 
   - Modify the COMPNUMS in the pyapw.par.  
-- Run 06-plot_lightcurve.py
+- Run 05-plot_lightcurve.py
   - Generate the light curve in flux, using the COMPNUMS stars
   - Save the light curve data in the *.dat file. 
   - Generate the finding chart with the target and comparisons.

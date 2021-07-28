@@ -46,6 +46,8 @@ FWHM_ECC = 0.3
 # Determine the plots for each star (Warning! too many pngs)
 PLOT_FLAG = bool(int(par['STARPLOT']))
 LOGFILE = par['LOGFILE']
+# Observatory information
+LAT, LON, H = np.array(par['OBSINFO'].split(','), float)
 
 #-------------------------------------------------------------------------
 # GEN. the list of FITS files for aperture photometry
@@ -96,7 +98,7 @@ for i, fname in enumerate(flist):
         try:
             RA = hdr['RA']
             Dec = hdr['Dec']
-            HJD = helio_jd(DATEOBS, RA, Dec, exptime=EXPTIME)
+            HJD = helio_jd(DATEOBS, RA, Dec, exptime=EXPTIME, LAT=LAT, LON=LON, H=H)
         except:
             HJD = 0
     AIRMASS = hdr.get('AIRMASS')

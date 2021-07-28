@@ -19,3 +19,5 @@ TARGETNUM 13           # (TIMESERIES) target star numbers in finding-chart
 COMPNUMS  10,17,22     # (TIMESERIES) (NOSPACE) comparison star numbers
 CHKSIG    0.02         # (TIMESERIES) STD checking criteria for LC test
 CHKDELM   3            # (TIMESERIES) DEL_MAG checking criteria for LC test
+OBSINFO   34.5261362,127.4470482,81.35789 # Observatory in.fo (LAT, LON, ELEV)
+
