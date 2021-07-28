@@ -55,7 +55,7 @@ fig1, ax1 = plt.subplots(figsize=(10,5))
 ax1.plot(JD-JD0, X,'r-',lw=2)
 ax1.grid()
 ax1.set_title('%s AIRMASS' % WNAME)
-fig1.savefig('w%s-AIRMASS.png' % WNAME)
+fig1.savefig('w%s-AIRMASS' % WNAME)
 plt.close('all')
 # CHECK number of frames and stars 
 tmp = np.genfromtxt(FLIST[0]+'.apx') 
