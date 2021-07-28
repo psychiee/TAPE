@@ -87,7 +87,7 @@ ax.text(xpix[TNUM]+30, ypix[TNUM]-20, '(%i)' % (TNUM+1,), \
 ax.set_xlim(0,nx)
 ax.set_ylim(ny,0)
 ax.set_title('Target & Comparions: %s-%s / R_AP=%.1f' % (WNAME,FILTER,PHOT_APER[T_APER-1]))
-fig.savefig('w%s-%s-mark' % (WNAME,FILTER))
+fig.savefig('w%s-%s-mark.png' % (WNAME,FILTER))
 plt.close('all')
 
 #prnlog('Plot the image with target & comparisons')
@@ -157,7 +157,7 @@ ax.set_title('%s Light Curve (FLX-ALL) JD0=%d' % (WNAME, JD0))
 ax.grid()
 ax.set_xlabel('JD-JD0')
 ax.set_ylabel('Relative Flux')
-fig.savefig('w%s-%s-LC-FLX' % (WNAME,FILTER))
+fig.savefig('w%s-%s-LC-FLX.png' % (WNAME,FILTER))
 fig.clf()
     
 # WRITE the light curve of flux ratio 
@@ -198,7 +198,7 @@ if NCOMP > 1:
     ax.set_ylabel('$\Delta$m')
     ax.set_xlabel('Time [days]')
     ax.set_title('%s $\Delta$m btw. comparisons' % WNAME)
-    fig.savefig('w%s-%s-COMPS' % (WNAME,FILTER))
+    fig.savefig('w%s-%s-COMPS.png' % (WNAME,FILTER))
     fig.clf()
 plt.close('all')
 
