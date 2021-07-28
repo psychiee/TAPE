@@ -1,4 +1,4 @@
-WORKDIR   ./180326-HAT-P-12b
+WORKDIR   ./210727-TOI1516.01
 BINNING   1            # (APPHOT) BINNING option of CCD images for processing
 STARBOX   40           # (APPHOT) box half-size for photometry [pixel]
 THRES     5            # (APPHOT) n-sigma threshold for finding stars
@@ -11,11 +11,11 @@ EGAIN     1.0          # (APPHOT) the gain of CCD for error estimation
 PSCALE    0.464        # (APPHOT) pixel scale in stellar profile plot 0.3867,0.464
 STARPLOT  0            # (APPHOT) flag for plotting the diagram for each star
 LOGFILE   wobs.log     # (APPHOT) log file name for LC processing
-APERUSED  2            # (TIMESERIES) index of aperture(in PHOTAPER) for LC
+APERUSED  3            # (TIMESERIES) index of aperture(in PHOTAPER) for LC
 SHIFTPLOT 1            # (TIMESERIES) flag for plotting all shift-images
-OBSDATE   180326       # (TIMESERIES) observation date
-TARGETNAM HAT-P-12b    # (TIMESERIES) target name  
-TARGETNUM 13           # (TIMESERIES) target star numbers in finding-chart 
-COMPNUMS  10,17,22     # (TIMESERIES) (NOSPACE) comparison star numbers
+OBSDATE   210727       # (TIMESERIES) observation date
+TARGETNAM TOI1516.01    # (TIMESERIES) target name
+TARGETNUM 71           # (TIMESERIES) target star numbers in finding-chart
+COMPNUMS  31,63,81     # (TIMESERIES) (NOSPACE) comparison star numbers
 CHKSIG    0.02         # (TIMESERIES) STD checking criteria for LC test
 CHKDELM   3            # (TIMESERIES) DEL_MAG checking criteria for LC test

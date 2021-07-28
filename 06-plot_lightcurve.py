@@ -127,7 +127,7 @@ for cidx1 in CLIST1:
     ax.set_ylim(np.max(y[vv])+0.005,np.min(y[vv])-0.005)
     ax.set_title('%s Light Curve (%03d-%03d) JD0=%d' % (WNAME, TNUM1, cidx1, JD0))
     ax.grid()
-    fig.savefig('w%s-%s-LC-MAG-%03d' % (WNAME,FILTER,cidx1))
+    fig.savefig('w%s-%s-LC-MAG-%03d.png' % (WNAME,FILTER,cidx1))
     fig.clf()
     
     # WRITE the magintude difference for each comparison
