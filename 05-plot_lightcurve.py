@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from astropy.io import fits 
 from photlib import read_params, prnlog, sigma_clip
 
+# READ the parameter file
 par = read_params()
 
 # MOVE to the working directory
@@ -163,7 +164,7 @@ fig.clf()
 # WRITE the light curve of flux ratio 
 fout = open('w%s-%s.dat' % (WNAME,FILTER),'w')
 for vidx in vv:
-    fout.write('%15.6f %12.8f %12.8f \n' % (JD[vidx], SFLX[vidx], SERR[vidx]))
+    fout.write('%.8f %12.8f %12.8f \n' % (JD[vidx], SFLX[vidx], SERR[vidx]))
 fout.close()
 
 NCOMP = len(CLIST1)

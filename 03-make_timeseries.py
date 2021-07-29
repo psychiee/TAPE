@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from astropy.io import fits 
 from photlib import read_params, prnlog, sigma_clip
 
+# READ the parameter file
 par = read_params()
 
 # MOVE to the working directory 
@@ -27,8 +28,7 @@ SHIFT_PLOT = bool(int(par['SHIFTPLOT']))  # ON/OFF image shift plot
 N_APER = len(par['PHOTAPER'].split(',')) # number of aperture in .apw file, photometry result
 FWHM_CUT2 = np.array(par['FWHMCUT'].split(','),float)[1]
 LOGFILE = par['LOGFILE']
-#NSTARS = int(par['NSTARS'])
-OBSDATE = par['OBSDATE'] 
+OBSDATE = par['OBSDATE']
 TARGETNAME = par['TARGETNAM']
 WNAME = OBSDATE+'-'+TARGETNAME
 

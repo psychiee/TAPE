@@ -12,6 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from photlib import read_params, prnlog
 
+# READ the parameter file
 par = read_params()
 
 # MOVE to the working directory 

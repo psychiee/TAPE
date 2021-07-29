@@ -13,13 +13,13 @@ import numpy as np
 import matplotlib.pyplot as plt 
 from matplotlib.patches import Wedge, Circle
 from astropy.io import fits
-from photlib import read_params, helio_jd, find_stars_th,  \
+from photlib import read_params, helio_jd, calc_jd, find_stars_th,  \
     fit_gauss_elliptical, cal_magnitude, sigma_clip, prnlog, airmass
 
-# READ paramter file 
+# READ the parameter file
 par = read_params()
 
-# CHANGE the working directory
+# MOVE to the working directory
 WORKDIR = par['WORKDIR']
 os.chdir(WORKDIR) 
 
@@ -37,17 +37,17 @@ N_APER = len(PHOT_APER)
 SKY_ANNUL1, SKY_ANNUL2 = np.array(par['SKYANNUL'].split(','), float) # inner and outer radius of sky region
 SUBPIXEL = int(par['SUBPIXEL'])  # number of subpixel for detailed aperture photometry
 # (FINDSTARS) parameters
-#NSTARS = int(par['NSTARS'])
-THRES = float(par['THRES'])
-SATU = int(par['SATU'])      # (FINDSTARS) saturation level for exclusion
+THRES = float(par['THRES'])  # threshold for detection
+SATU = int(par['SATU'])      # saturation level for exclusion
 # (CHECK) paramters
 FWHM_CUT1, FWHM_CUT2 = np.array(par['FWHMCUT'].split(','),float)
 FWHM_ECC = 0.3
 # Determine the plots for each star (Warning! too many pngs)
 PLOT_FLAG = bool(int(par['STARPLOT']))
+# GEN. the log file for the following process
 LOGFILE = par['LOGFILE']
-# Observatory information
-LAT, LON, H = np.array(par['OBSINFO'].split(','), float)
+# Observatory information for HJD
+LAT, LON, H = float(par['OBSLAT']), float(par['OBSLON']), float(par['OBSELEV'])
 
 #-------------------------------------------------------------------------
 # GEN. the list of FITS files for aperture photometry
@@ -74,7 +74,7 @@ prnlog('#TOTAL NUMBER of FILES: {}'.format(NFRAME))
 prnlog('#THRES = {}'.format(THRES))
 prnlog('#SATU. LEVEL = {}'.format(SATU))
 prnlog('#PHOT_APER: {}'.format(PHOT_APER))
-prnlog('#SKY_ANNUL: {},{}'.format(SKY_ANNUL1, SKY_ANNUL2))
+prnlog('#SKY_ANNUL: {}'.format([SKY_ANNUL1, SKY_ANNUL2]))
 prnlog('#SUBPIXEL: {}'.format(SUBPIXEL))
 
 # SET the file name of observation log 
@@ -100,7 +100,8 @@ for i, fname in enumerate(flist):
             Dec = hdr['Dec']
             HJD = helio_jd(DATEOBS, RA, Dec, exptime=EXPTIME, LAT=LAT, LON=LON, H=H)
         except:
-            HJD = 0
+            HJD = calc_jd(DATEOBS, exptime=EXPTIME)
+
     AIRMASS = hdr.get('AIRMASS')
     if AIRMASS is None:
         try:

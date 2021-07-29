@@ -14,8 +14,10 @@ import numpy as np
 from astropy.io import fits 
 from photlib import read_params, prnlog
 
+# READ the parameter file
 par = read_params() 
 
+# MOVE to the working directory
 os.chdir(par['WORKDIR'])
 prnlog('#WORK DIR: %s' % par['WORKDIR'])
 # FILTERING for binning option

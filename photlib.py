@@ -28,10 +28,12 @@ def read_params():
     f = open('tape.par', 'r')
     par = {}
     for line in f: 
-        tmp = line.split()
-        par.update({tmp[0]:tmp[1]})
+        tmps = line.split('#')[0].split()
+        if len(tmps) < 1: continue
+        keyword = tmps[0]
+        contents = ''.join(tmps[1:])
+        par.update({keyword:contents})
     return par 
-
 
 def sigma_clip1(xx, lower=3, upper=3):
     mxx = np.ma.masked_array(xx)
@@ -76,6 +78,11 @@ def helio_jd(dateobs, ra, dec, exptime=0, LAT=0, LON=0, H=0):
 
     return times_helio.jd
 
+def calc_jd(dateobs, exptime=0):
+    times = aptime.Time(dateobs, format='isot', scale='utc')
+    dt = aptime.TimeDelta(exptime / 2.0, format='sec')
+    times = times + dt
+    return times.jd
 
 def airmass(alt):
     """Computes the airmass at a given altitude.
