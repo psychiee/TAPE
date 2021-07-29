@@ -76,23 +76,26 @@ OBSELEV   81.35789     # The elevation[m] of the observatory (for HJD)
 - OBSLON: longitude of the observatory (for calculating HJD)
 - OBSELEV: elevation of the observatory (for calculating HJD)
 
-### Run PyAPW codes
+### Run TAPE codes
 - Run 01-run_ccdproc.py 
+  - Check the binning setting(BINNING) in tape.par, based on your images
   - Make the list for image processing. (wbias.list, wdark100s.list, wflatB.list, ... )
   - Generate master BIAS, DARK for each exposure, FLAT for each filter.
-  - Do image preprocessing of the object files. 
+  - Do image preprocessing of the object files. => w*.fits
 - Run 02-run_photometry.py 
-  - Do aperture photometry for each image. 
-  - Save the magnitudes and fluxes of each star in each frame. (*.apw)
+  - Do aperture photometry for each image.
+  - Save the magnitudes and fluxes of each star in each frame. => *.apw, *-phot.png
+  - Generate the log file for the next steps => LOGFILE
 - Run 03-make_timeseries.py    
-  - Do matching process for each frame.
-  - Generate the finding chart with the star number (*-chart.png)
-  - Find the target star and modify TARGETNUM in the pyapw.par
-  - Adjust the CHKSIG, CHKDELM in the pyapw.par for the automatic determination of comparisons
+  - Do matching process for each frame from the log file(LOGFILE)
+  - Generate the finding chart with the star number => *-chart.png
+  - Find the target star in the finding chart(*-chart.png) and modify TARGETNUM in the tape.par 
+  - Adjust the CHKSIG, CHKDELM in the tape.par for the automatic determination of comparisons
 - Run 04-chek_comps.py    
   - Generate the light curves of proper comparisons by the criteria of CHKSIG, CHKDELM.
   - Determine the comparison stars using the plots. 
-  - Modify the COMPNUMS in the pyapw.par.  
+  - Confirm the comparisons in the finding chart (*-chart.png)
+  - Modify the COMPNUMS in the tape.par.  
 - Run 05-plot_lightcurve.py
   - Generate the light curve in flux, using the COMPNUMS stars
   - Save the light curve data in the *.dat file. 
