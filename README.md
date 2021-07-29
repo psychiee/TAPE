@@ -33,21 +33,24 @@ STARBOX   40           # (APPHOT) box half-size for photometry [pixel]
 THRES     5            # (APPHOT) n-sigma threshold for finding stars
 FWHMCUT   3,20         # (APPHOT) FWHM lower/upper limit for filtering non-stars [pixel]
 SATU      60000        # (APPHOT) saturation level limit for filtering [ADU]
-PHOTAPER  10,20,30     # (APPHOT)(NO_SPACE)apertures for photometry [pixel]
-SKYANNUL  30,34        # (APPHOT)(NO_SPACE)sky-annulus for background [pixel]
+PHOTAPER  10,20,30     # (APPHOT) (CSV) apertures for photometry [pixel] (csv)
+SKYANNUL  30,34        # (APPHOT) (CSV) sky-annulus for background [pixel]
 SUBPIXEL  1            # (APPHOT) the division number for subpixel method
 EGAIN     1.0          # (APPHOT) the gain of CCD for error estimation
 PSCALE    0.464        # (APPHOT) pixel scale in stellar profile plot 0.3867,0.464
-STARPLOT  0            # (APPHOT) flag for plotting the diagram for each star
+STARPLOT  0            # (APPHOT) (BOOL) plotting the diagram for each star
 LOGFILE   wobs.log     # (APPHOT) log file name for LC processing
 APERUSED  2            # (TIMESERIES) index of aperture(in PHOTAPER) for LC
 SHIFTPLOT 1            # (TIMESERIES) flag for plotting all shift-images
 OBSDATE   180326       # (TIMESERIES) observation date
-TARGETNAM HAT-P-12b    # (TIMESERIES) target name  
-TARGETNUM 13           # (TIMESERIES) target star numbers in finding-chart 
-COMPNUMS  10,17,22     # (TIMESERIES) (NOSPACE) comparison star numbers
+TARGETNAM HAT-P-12b    # (TIMESERIES) target name
+TARGETNUM 13           # (TIMESERIES) target star numbers in finding-chart
+COMPNUMS  10,17,22     # (TIMESERIES) (CSV) comparison star numbers
 CHKSIG    0.02         # (TIMESERIES) STD checking criteria for LC test
 CHKDELM   3            # (TIMESERIES) DEL_MAG checking criteria for LC test
+OBSLAT    34.5261362   # The latitude[deg] of the observatory (for HJD)
+OBSLON    127.4470482  # The longitude[deg] of the observatory (for HJD)
+OBSELEV   81.35789     # The elevation[m] of the observatory (for HJD)
 ```
 - WORKDIR: relative or absolute path of working directory
 - BINNING: pixel binning of processing images
@@ -67,8 +70,11 @@ CHKDELM   3            # (TIMESERIES) DEL_MAG checking criteria for LC test
 - OBSDATE: observation date and target name for making files and plots
 - TARGETNUM: target number in the finding-chart (XXXXXX-YYY-chart.png)
 - COMPNUMS: numbers of comparison stars for differential photometry in the finding-chart (XXXXXX-YYY-chart.png)
-- CHKSIG: cut-off sigma value in light curve to find a proper comparison star (for 05-chek_comps.py)
-- CHKDELM: cut-off delta magnitude in light curve to find a proper comparison star (for 05-chek_comps.py)
+- CHKSIG: cut-off sigma value in light curve to find a proper comparison star (for 04-chek_comps.py)
+- CHKDELM: cut-off delta magnitude in light curve to find a proper comparison star (for 04-chek_comps.py)
+- OBSLAT: latitude of the observatory (for calculating HJD)
+- OBSLON: longitude of the observatory (for calculating HJD)
+- OBSELEV: elevation of the observatory (for calculating HJD)
 
 ### Run PyAPW codes
 - Run 01-run_ccdproc.py 
