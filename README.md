@@ -6,7 +6,7 @@ Perform the aperture photometry for time-series observations. (e.g. exoplanet tr
 The Goal of Project
  - Be able to perform photometry without IRAF/Linux for the images obtained at DOAO (Deokheung Optical Astronomy Observatory)
  - Share the set of verified codes for an astronomical project
- - Explain the process of image processing and photometry for educational purpose 
+ - Explain the process of image preprocessing and photometry for educational purpose 
   
 ## Components
 - photlib.py (functions for image processing and photometry)  
