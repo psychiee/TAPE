@@ -25,7 +25,7 @@ The Goal of Project
   - flat-???.fits 
   - object-??????.fits  
 
-### Input the parameters in pyapw.par 
+### Input the parameters in tape.par 
 ```    
 WORKDIR   ./180326-HAT-P-12b
 BINNING   1            # (APPHOT) BINNING option of CCD images for processing
