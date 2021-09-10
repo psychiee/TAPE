@@ -1,5 +1,5 @@
 # TAPE
-## Tools for Aperture Photometry of a transiting Exoplanet
+## Tools for Aperture Photometry of transiting Exoplanet
 
 Perform the aperture photometry for time-series observations. (e.g. exoplanet transit events, variable stars )
 
