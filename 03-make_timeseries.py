@@ -64,7 +64,7 @@ tnum = np.arange(1,len(tx)+1, dtype=int)
 tmag = dat[:,(2*N_APER+2)]
 tbb = np.argsort(tmag)[:NCUT]
 
-fmat = open('wmatching.log','w')
+fmat = open('wmatching.log', 'w')
 jds, xs, ys, alts, azis, decs = [FJD[0],], [0,], [0,], [0,], [0,], [0,]
 # LOOP for apw files
 for i, fidx in enumerate(FLIST):
@@ -77,13 +77,16 @@ for i, fidx in enumerate(FLIST):
     HJD = FJD[i]
     ALT = float(hdr.get('ALT'))
     AZI = float(hdr.get('AZ'))
-    try: DEC = float(hdr.get('DEC'))
-    except: DEC = 0
+    try:
+        DEC = float(hdr.get('DEC'))
+    except:
+        DEC = 0
     AIRMASS = FX[i]
 
     # READ the apw file with number and index of apertures 
     dat = np.genfromtxt(fidx+'.apw')
-    if len(dat.shape) < 2: continue
+    if len(dat.shape) < 2:
+        continue
     
     # READ all coordiates ------------------------------------------
     xpix, ypix = dat[:,0], dat[:,1] 
@@ -105,15 +108,14 @@ for i, fidx in enumerate(FLIST):
     ymed, ysig = np.median(dy), np.std(dy)
     
     # PLOT the shift result in the image 
-    if SHIFT_PLOT == True:
+    if SHIFT_PLOT:
         fig, ax = plt.subplots(num=1, figsize=(8,8), dpi=100)
         ny, nx = img.shape
         iavg, imed, istd = sigma_clip(img)
         z1, z2 = imed, imed+istd*8
         ax.imshow(-img, vmin=-z2, vmax=-z1, cmap='gray')
         ax.scatter(xpix, ypix, 100,facecolors='none', edgecolor='b', alpha=0.7)
-        ax.plot(tx-xmed, ty-ymed, 'r+', mew=1, ms=18, alpha=0.7, \
-                label='dx=%.3f, dy=%.3f' % (xmed, ymed))
+        ax.plot(tx-xmed, ty-ymed, 'r+', mew=1, ms=18, alpha=0.7, label=f'dx={xmed:.3f}, dy={ymed:.3f}')
         ax.set_xlim(0,nx)
         ax.set_ylim(ny,0)
         ax.set_title('Shift of Image: '+fidx, fontsize=15)
@@ -121,10 +123,8 @@ for i, fidx in enumerate(FLIST):
         fig.savefig(fidx+'-matching')
         fig.clf()
     
-    prnlog('%s dx=%.2f(%.2f) dy=%.2f(%.2f) %i/%i' % \
-          (fidx, xmed, xsig, ymed, ysig, len(dx), len(tbb)))
-    fmat.write('%s %8.3f %6.3f %8.3f %6.3f %i \n' % \
-              (fidx, xmed, xsig, ymed, ysig, len(dx)))
+    prnlog(f'{fidx} dx={xmed:.2f}({xsig:.2f}) dy={ymed:.2f}({ysig:.2f}) {len(dx):d}/{len(tbb):d}')
+    fmat.write(f'{fidx} {xmed:8.3f} {xsig:6.3f} {ymed:8.3f} {ysig:6.3f} {len(dx):d}\n')
     jds.append(HJD)
     xs.append(xmed)
     ys.append(ymed)
@@ -141,7 +141,7 @@ for i, fidx in enumerate(FLIST):
             flag = 99
         else:
             flag = 0
-        fstr = '%03i %10.3f %10.3f ' % (i, xpix[mm], ypix[mm])
+        fstr = f'{i:03.0f} {xpix[mm]:10.3f} {ypix[mm]:10.3f} '
         fstr1, fstr2, fstr3, fstr4 = '', '', '', ''
         for k in range(N_APER):
             fstr1 = fstr1 + '%12.3f ' % (dat[mm,(k+2)],)
@@ -160,27 +160,25 @@ plt.close('all')
 # shift plot ====================================================
 fig, ax = plt.subplots(num=3, figsize=(8,8), dpi=100)
 ax.plot(xs, ys, 'r-', alpha=0.5)
-fout = open('w%s-shift.txt' % WNAME, 'w')
+fout = open(f'w{WNAME}-shift.txt', 'w')
 num = range(len(xs))
 jd0 = jds[0]
 djd = jds[-1] - jd0
-prnlog('#SHIFT PLOT: JD(%.6f - %.6f)' % (jd0, djd))
+prnlog(f'#SHIFT PLOT: JD({jd0:.6f} - {djd:.6f})')
 for p1, p2, p3, p4, p5, p6, p7 in zip(num, xs, ys, jds, alts, azis, decs):
-    fout.write('%4i %20.8f %8.3f %8.3f %8.3f %8.3f %8.3f\n' % \
-               ( p1, p4, p2, p3, p5, p6, p7))
+    fout.write(f'{p1:4.0f} {p4:20.8f} {p2:8.3f} {p3:8.3f} {p5:8.3f} {p6:8.3f} {p7:8.3f}\n')
     ax.plot(p2, p3, 'ro', ms=((p4-jd0)*(3600*12)/500.), alpha=0.5) 
 fout.close()
 for i in np.linspace(0,djd*3600*12,6):
-    ax.plot(-200,200,'ro',ms=(i/500.), \
-             alpha=0.5, label='%5d s' % (i,))
+    ax.plot(-200,200,'ro',ms=(i/500.), alpha=0.5, label=f'{i:5.1f} s')
 ax.set_xlim(min(xs)-5,max(xs)+5)
 ax.set_ylim(min(ys)-5,max(ys)+5)
 ax.set_aspect(1)
 ax.grid()
 ax.legend(fontsize=10,loc='upper right', ncol=3, numpoints=1)
-ax.set_title('w%s Shift Plot' % WNAME)
-prnlog('WRITE TO w%s-shift.png...' % WNAME)
-fig.savefig('w%s-shift.png' % WNAME)
+ax.set_title(f'w{WNAME} Shift Plot')
+prnlog(f'WRITE TO w{WNAME}-shift.png...')
+fig.savefig(f'w{WNAME}-shift.png')
 plt.close('all')
 
 # READ AND PLOT the finding-chart
@@ -194,13 +192,12 @@ ax.imshow(-img, vmin=-z2, vmax=-z1, cmap='gray')
 tpp = np.argsort(tmag)[:200]
 # LOOP for the bright stars 
 for ix, iy, inum in zip(tx[tpp], ty[tpp], tnum[tpp]):
-    ax.text(ix+30, iy, '%02i' % (inum,), \
-            fontsize=10, color='#0022FF')
+    ax.text(ix+30, iy, '%02i' % (inum,), fontsize=10, color='#0022FF')
 ax.set_xlim(0,nx)
 ax.set_ylim(ny,0)
-ax.set_title('Star Index Chart: %s-%s / %s' % (WNAME,FILTER,FID))
-prnlog('WRITE TO w%s-chart.png...' % WNAME)
-fig.savefig('w%s-chart.png' % WNAME)
+ax.set_title(f'Star Index Chart: {WNAME}-{FILTER} / {FID}')
+prnlog(f'WRITE TO w{WNAME}-chart.png...')
+fig.savefig(f'w{WNAME}-chart.png')
 plt.close('all')
 
 

@@ -75,20 +75,16 @@ NSTARS = len(snum)
 for j, cidx in enumerate(CLIST1):
     cidx = cidx - 1
     ax.plot(xpix[cidx], ypix[cidx], 'bo', alpha=0.3, ms=15)
-    ax.text(xpix[cidx]+30, ypix[cidx], 'C%i' % (j+1,), \
-             fontweight='bold', fontsize=15, color='#2222FF')
-    ax.text(xpix[cidx]+30, ypix[cidx]+50, '(%i)' % (snum[cidx],), \
-             fontweight='bold', fontsize=12, color='#3333FF')
+    ax.text(xpix[cidx]+30, ypix[cidx], f'C{j+1:d}', fontweight='bold', fontsize=15, color='#2222FF')
+    ax.text(xpix[cidx]+30, ypix[cidx]+50, f'({snum[cidx]:.0f})', fontweight='bold', fontsize=12, color='#3333FF')
 # MARK the target
 ax.plot(xpix[TNUM], ypix[TNUM], 'yo', alpha=0.4, ms=20)
-ax.text(xpix[TNUM]-30, ypix[TNUM]-70, TARGET, \
-        fontweight='bold', fontsize=15, color='r')
-ax.text(xpix[TNUM]+30, ypix[TNUM]-20, '(%i)' % (TNUM+1,), \
-        fontweight='bold', fontsize=12, color='r')
+ax.text(xpix[TNUM]-30, ypix[TNUM]-70, TARGET, fontweight='bold', fontsize=15, color='r')
+ax.text(xpix[TNUM]+30, ypix[TNUM]-20, f'({TNUM+1})', fontweight='bold', fontsize=12, color='r')
 ax.set_xlim(0,nx)
 ax.set_ylim(ny,0)
-ax.set_title('Target & Comparions: %s-%s / R_AP=%.1f' % (WNAME,FILTER,PHOT_APER[T_APER-1]))
-fig.savefig('w%s-%s-mark.png' % (WNAME,FILTER))
+ax.set_title(f'Target & Comparions: {WNAME}-{FILTER} / R_AP={PHOT_APER[T_APER-1]:.1f}')
+fig.savefig(f'w{WNAME}-{FILTER}-mark.png')
 plt.close('all')
 
 #prnlog('Plot the image with target & comparisons')
@@ -102,7 +98,7 @@ for i, fidx in enumerate(FLIST):
     MAG.append(dat[:,(2*N_APER+T_APER+2)])
     MRR.append(dat[:,(3*N_APER+T_APER+2)])
     FLG.append(dat[:,(4*N_APER+4)])
-    prnlog('FRAME# %4i: Read %s.apx file.' % (FRM[i],fidx))
+    prnlog(f'FRAME# {FRM[i]:4.0f}: Read {fidx}.apx file.')
 # MAKE the arrays of photometric results by JDs and stars
 # row: frames(time), col: stars(mag, flux) 
 FLX, ERR = np.array(FLX), np.array(ERR)
@@ -118,7 +114,7 @@ JD0 = int(JD[0])
 for cidx1 in CLIST1:
     # CONVERT number into index
     cidx = cidx1 - 1 
-    prnlog('%s / MAG PLOT: %03i-%03i' % (WNAME, TNUM1, cidx1))
+    prnlog(f'{WNAME} / MAG PLOT: {TNUM1:03d}-{cidx1:03d}')
     # PLOT the light curves of magnitude for each star  
     fig, ax = plt.subplots(num=2, figsize=(10,5))
     y = TMAG - MAG[:,cidx]
@@ -126,15 +122,15 @@ for cidx1 in CLIST1:
     vv, = np.where(TFLG+FLG[:,cidx] == 0)
     ax.errorbar(JD[vv]-JD0,y[vv],yerr=yerr[vv],fmt='ko',ms=5, alpha=0.5)
     ax.set_ylim(np.max(y[vv])+0.005,np.min(y[vv])-0.005)
-    ax.set_title('%s Light Curve (%03d-%03d) JD0=%d' % (WNAME, TNUM1, cidx1, JD0))
+    ax.set_title(f'{WNAME} Light Curve ({TNUM1:03d}-{cidx1:03d}) JD0={JD0:d}')
     ax.grid()
-    fig.savefig('w%s-%s-LC-MAG-%03d.png' % (WNAME,FILTER,cidx1))
+    fig.savefig(f'w{WNAME}-{FILTER}-LC-MAG-{cidx1:03d}.png')
     fig.clf()
     
     # WRITE the magintude difference for each comparison
-    fmag = open('w%s-%s-LC-MAG-%03d.txt' % (WNAME,FILTER,cidx1,),'w')
+    fmag = open(f'w{WNAME}-{FILTER}-LC-MAG-{cidx1:03d}.txt', 'w')
     for vidx in vv:
-        fmag.write('%16.8f %8.5f %8.5f \n' % (JD[vidx], y[vidx], yerr[vidx]))
+        fmag.write(f'{JD[vidx]:16.8f} {y[vidx]:8.5f} {yerr[vidx]:8.5f} \n')
     fmag.close()
 plt.close('all')
 
@@ -152,19 +148,18 @@ vv, = np.where(SFLG == 0)
 
 # PLOT the light curve by flux 
 fig, ax = plt.subplots(num=3, figsize=(10,5))
-ax.errorbar(JD[vv]-JD0, SFLX[vv], yerr=SERR[vv], \
-             fmt='ko', ms=4, mew=1, alpha=0.8)
-ax.set_title('%s Light Curve (FLX-ALL) JD0=%d' % (WNAME, JD0))
+ax.errorbar(JD[vv]-JD0, SFLX[vv], yerr=SERR[vv], fmt='ko', ms=4, mew=1, alpha=0.8)
+ax.set_title(f'{WNAME} Light Curve (FLX-ALL) JD0={JD0:d}')
 ax.grid()
 ax.set_xlabel('JD-JD0')
 ax.set_ylabel('Relative Flux')
-fig.savefig('w%s-%s-LC-FLX.png' % (WNAME,FILTER))
+fig.savefig(f'w{WNAME}-{FILTER}-LC-FLX.png')
 fig.clf()
     
 # WRITE the light curve of flux ratio 
-fout = open('w%s-%s.dat' % (WNAME,FILTER),'w')
+fout = open(f'w{WNAME}-{FILTER}.dat', 'w')
 for vidx in vv:
-    fout.write('%.8f %12.8f %12.8f \n' % (JD[vidx], SFLX[vidx], SERR[vidx]))
+    fout.write(f'{JD[vidx]:.8f} {SFLX[vidx]:12.8f} {SERR[vidx]:12.8f}\n')
 fout.close()
 
 NCOMP = len(CLIST1)
@@ -186,9 +181,8 @@ if NCOMP > 1:
             chkE = chkE[vv]
             chkT = JD[vv] - JD0
             RMS = np.std(chkM)
-            ax.errorbar(chkT, chkM+M0, yerr=chkE, \
-                         fmt='o', ms=4, alpha=0.75)
-            clabel='C%03i-C%03i\n(%.2f mmag)' % (c1+1,c2+1,RMS*1000) 
+            ax.errorbar(chkT, chkM+M0, yerr=chkE, fmt='o', ms=4, alpha=0.75)
+            clabel= f'C{c1+1:03d}-C{c2+1:03d}\n({RMS*1000:.2f} mmag)'
             ax.text(np.max(chkT)+0.005,M0-0.2*dM0, clabel)    
             ax.plot(chkT,np.zeros_like(chkT)+M0,'k--',alpha=0.7)
             M0 = M0+dM0
@@ -198,8 +192,8 @@ if NCOMP > 1:
     ax.set_xlim(x1, x2+(x2-x1)*0.25)
     ax.set_ylabel('$\Delta$m')
     ax.set_xlabel('Time [days]')
-    ax.set_title('%s $\Delta$m btw. comparisons' % WNAME)
-    fig.savefig('w%s-%s-COMPS.png' % (WNAME,FILTER))
+    ax.set_title(f'{WNAME} $\Delta$m btw. comparisons')
+    fig.savefig(f'w{WNAME}-{FILTER}-COMPS.png')
     fig.clf()
 plt.close('all')
 

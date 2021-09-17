@@ -55,8 +55,8 @@ JD0 = int(JD[0])
 fig1, ax1 = plt.subplots(figsize=(10,5))
 ax1.plot(JD-JD0, X,'r-',lw=2)
 ax1.grid()
-ax1.set_title('%s AIRMASS' % WNAME)
-fig1.savefig('w%s-AIRMASS.png' % WNAME)
+ax1.set_title(f'{WNAME} AIRMASS')
+fig1.savefig(f'w{WNAME}-AIRMASS.png')
 plt.close('all')
 # CHECK number of frames and stars 
 tmp = np.genfromtxt(FLIST[0]+'.apx') 
@@ -95,7 +95,7 @@ for j in range(1,len(FLX[0,:])+1):
     vv, = np.where(yflg == 0)
     VFRMS = len(vv)
     if VFRMS < NFRMS*0.5: 
-        prnlog('%03i-%03i: [FAIL] need more points, %i pts' % (TNUM1,j,VFRMS))
+        prnlog(f'{TNUM1:03d}-{j:03d}: [FAIL] need more points, {VFRMS:d} pts')
         continue
     
     ymed = np.median(y)
@@ -103,26 +103,25 @@ for j in range(1,len(FLX[0,:])+1):
     ysig = np.std(y)
 
     if ysig > CHKSIG: 
-        prnlog('%03i-%03i: [FAIL] SIG = %.2f' % (TNUM1,j,ysig))
+        prnlog(f'{TNUM1:03d}-{j:03d}: [FAIL] SIG = {ysig:.2f}')
         continue 
     if ymed < -CHKDELM: 
-        prnlog('%03i-%03i: [FAIL] DELM = %.2f' % (TNUM1,j,ymed))
+        prnlog(f'{TNUM1:03d}-{j:03d}: [FAIL] DELM = {ymed:.2f}')
         continue
     
-    prnlog('%03i-%03i: [OK] dM=%.3f RMS=%.3f' % (TNUM1,j,ymed,rms))
+    prnlog(f'{TNUM1:03d}-{j:03d}: [OK] dM={ymed:.3f} RMS={rms:.3f}')
     # PLOT the light curves of magnitude for each star  
     fig1, ax1 = plt.subplots(num=99,figsize=(10,5))
     
-    ax1.errorbar(x[vv],y[vv],yerr=yerr[vv],fmt='ko',\
-                 ms=5, alpha=0.5, label='rms=%.5f' % (rms,))
+    ax1.errorbar(x[vv],y[vv],yerr=yerr[vv], fmt='ko', ms=5, alpha=0.5, label=f'rms={rms:.5f}')
     cc, = np.where((ymed - y)**2 > 4*rms**2)     
     for ix, iy, ifrm in zip(x[cc],y[cc],FRM[cc]):
         ax1.text(ix,iy,'%d' % (ifrm,),color='r',fontsize=10)
     ax1.set_ylim(ymed+0.03,ymed-0.03)
-    ax1.set_title('%s Light Curve (MAG-%03d) JD0=%d' % (WNAME, j,JD0))
+    ax1.set_title(f'{WNAME} Light Curve (MAG-{j:03d}) JD0={JD0:d}')
     ax1.grid()
     ax1.legend()
-    fig1.savefig('w%s-%s-CHK-%03d.png' % (WNAME,FILTER,j,))
+    fig1.savefig(f'w{WNAME}-{FILTER}-CHK-{j:03d}.png')
     fig1.clf()
 plt.close('all')
 
