@@ -1,12 +1,12 @@
 # TAPE
-## Tools for the Aperture Photometry of a transiting Exoplanet
+## Tools for Aperture Photometry of transiting Exoplanet
 
 Perform the aperture photometry for time-series observations. (e.g. exoplanet transit events, variable stars )
 
 The Goal of Project
  - Be able to perform photometry without IRAF/Linux for the images obtained at DOAO (Deokheung Optical Astronomy Observatory)
  - Share the set of verified codes for an astronomical project
- - Explain the process of image processing and photometry for educational purpose 
+ - Explain the process of image preprocessing and photometry for educational purpose 
   
 ## Components
 - photlib.py (functions for image processing and photometry)  
@@ -25,7 +25,7 @@ The Goal of Project
   - flat-???.fits 
   - object-??????.fits  
 
-### Input the parameters in pyapw.par 
+### Input the parameters in tape.par 
 ```    
 WORKDIR   ./180326-HAT-P-12b
 BINNING   1            # (APPHOT) BINNING option of CCD images for processing
