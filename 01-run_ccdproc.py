@@ -81,7 +81,7 @@ for fname in bias_list:
     bias_stack.append(dat)
     prnlog('%s %8.1f %8.1f %8.1f %8.1f ' % \
          (fname, np.mean(dat), np.std(dat), np.max(dat), np.min(dat)))
-master_bias = np.median(bias_stack, axis=0) 
+master_bias = np.array(np.median(bias_stack, axis=0), dtype=np.float32)
 dat = master_bias
 prnlog('python %8.1f %8.1f %8.1f %8.1f' % \
       (np.mean(dat), np.std(dat), np.max(dat), np.min(dat)))
@@ -105,7 +105,7 @@ for lname in list_files:
         dark_stack.append(dat - master_bias) 
         prnlog('%s %8.1f %8.1f %8.1f %8.1f ' % \
            (fname, np.mean(dat), np.std(dat), np.max(dat), np.min(dat)))
-    master_dark = np.median(dark_stack, axis=0)
+    master_dark = np.array(np.median(dark_stack, axis=0), dtype=np.float32)
     exptime_dark = hdr.get('EXPTIME')
     prnlog('Save to %s.fits ...%s %i' % (fidx, hdr['IMAGETYP'], hdr['EXPTIME']))
     hdr.set('OBJECT',fidx)
@@ -138,7 +138,7 @@ for lname in list_files:
         filter_flat = str.strip(hdr.get('FILTER'))
         prnlog('%s %8.1f %8.1f %8.1f %8.1f ' % \
             (fname, np.mean(dat), np.std(dat), np.max(dat), np.min(dat)))
-    master_flat = np.median(flat_stack, axis=0)
+    master_flat = np.array(np.median(flat_stack, axis=0), dtype=np.float32)
     prnlog('Save to %s.fits ...%s %s' % (fidx, hdr['IMAGETYP'], hdr['FILTER']))
     hdr.set('DATE-PRC', time.strftime('%Y-%m-%dT%H:%M:%S'))
     hdr.set('OBJECT', fidx)
@@ -169,7 +169,7 @@ for fname in flist:
     fFILTER = filter_flats[ff]
     fFRAME = master_flats[ff]
     cIMAGE = cIMAGE - master_bias - dFRAME
-    cIMAGE = cIMAGE / fFRAME
+    cIMAGE = np.array(cIMAGE / fFRAME, dtype=np.float32)
 
     hdr.set('DATE-PRC', time.strftime('%Y-%m-%dT%H:%M:%S'))
     fits.writeto('w'+fname, cIMAGE, hdr, overwrite=True)
