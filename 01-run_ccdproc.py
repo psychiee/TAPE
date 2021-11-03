@@ -81,7 +81,7 @@ for fname in bias_list:
     hdu = fits.open(fname)[0]
     dat, hdr = hdu.data, hdu.header
     bias_stack.append(dat)
-    prnlog(f"{fname:s} {np.mean(dat):8.1f} {np.std(dat):8.1f} {np.max(dat):8.1f} {np.min(dat):%8.1f}")
+    prnlog(f"{fname:s} {np.mean(dat):8.1f} {np.std(dat):8.1f} {np.max(dat):8.1f} {np.min(dat):8.1f}")
 master_bias = np.array(np.median(bias_stack, axis=0), dtype=np.float32)
 dat = master_bias
 prnlog(f"MASTER {np.mean(dat):8.1f} {np.std(dat):8.1f} {np.max(dat):8.1f} {np.min(dat):8.1f}")
@@ -103,7 +103,7 @@ for lname in list_files:
         hdu = fits.open(fname)[0]
         dat, hdr = hdu.data, hdu.header
         dark_stack.append(dat - master_bias) 
-        prnlog(f"{fname:s} {np.mean(dat):8.1f} {np.std(dat):8.1f} {np.max(dat):8.1f} {np.min(dat):%8.1f}")
+        prnlog(f"{fname:s} {np.mean(dat):8.1f} {np.std(dat):8.1f} {np.max(dat):8.1f} {np.min(dat):8.1f}")
     master_dark = np.array(np.median(dark_stack, axis=0), dtype=np.float32)
     exptime_dark = hdr.get('EXPTIME')
     prnlog('Save to %s.fits ...%s %i' % (fidx, hdr['IMAGETYP'], hdr['EXPTIME']))
@@ -134,7 +134,7 @@ for lname in list_files:
         fdat = dat / np.median(dat)
         flat_stack.append(fdat)
         filter_flat = str.strip(hdr.get('FILTER'))
-        prnlog(f"{fname:s} {np.mean(dat):8.1f} {np.std(dat):8.1f} {np.max(dat):8.1f} {np.min(dat):%8.1f}")
+        prnlog(f"{fname:s} {np.mean(dat):8.1f} {np.std(dat):8.1f} {np.max(dat):8.1f} {np.min(dat):8.1f}")
     master_flat = np.array(np.median(flat_stack, axis=0), dtype=np.float32)
     prnlog('Save to %s.fits ...%s %s' % (fidx, hdr['IMAGETYP'], hdr['FILTER']))
     hdr.set('DATE-PRC', time.strftime('%Y-%m-%dT%H:%M:%S'))
