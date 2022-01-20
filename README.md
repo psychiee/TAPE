@@ -86,7 +86,14 @@ B         0.1          # (FITTING)(INITIAL) impact parameter
 - OBSLAT: latitude of the observatory (for calculating HJD)
 - OBSLON: longitude of the observatory (for calculating HJD)
 - OBSELEV: elevation of the observatory (for calculating HJD)
-
+- FILTER: for the filename of the light curve data (wYYMMDD-XXXXX-"F".dat)
+- CONTCUT: parameters for detrending the light curve from the airmass and the color indices of comparisons
+- CONTCOEF: polynomial fitting order and coefficients for detrending, "0" - linear, "0,0" - quadratic, ... 
+- DMIN: binning of points with a specific time in minute
+- PLOTDECS: title description of fitting plot
+- PER: (REQUIRED) orbital period [in day], input parameter of fitting 
+- RSTAR: (REQUIRED) stellar radius [in R_sun], input parameter of fitting 
+- A, RR, B: (INITIAL) semi-major axis [in au], relative planetary radius to the stellar radius, impact parameter
 ### Run TAPE codes
 - Run 01-run_ccdproc.py 
   - Check the binning setting(BINNING) in tape.par, based on your images
