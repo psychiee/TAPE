@@ -13,20 +13,23 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Wedge, Circle
 from astropy.io import fits
-from photlib import read_params, helio_jd, calc_jd, find_stars_th, \
-    fit_gauss_elliptical, cal_magnitude, sigma_clip, prnlog, airmass
+from photlib import read_params, helio_jd, calc_jd, find_stars_th, sigma_clip, prnlog, airmass, run_apphot #fit_gauss_elliptical, cal_magnitude
+import multiprocessing as mp
+import shutil
 
 # READ the parameter file
 par = read_params()
 
 # MOVE to the working directory
 WORKDIR = par['WORKDIR']
+shutil.copy('tape.par', WORKDIR)
+
 os.chdir(WORKDIR)
 
 # ==================================================================
-# PARAMETERS for aperture photometry 
+# PARAMETERS for aperture photometry
 # ==================================================================
-# CCD/Optics parameters 
+# CCD/Optics parameters
 BINNING = int(par['BINNING'])
 PSCALE = float(par['PSCALE'])
 EGAIN = float(par['EGAIN'])
@@ -77,15 +80,15 @@ prnlog('#PHOT_APER: {}'.format(PHOT_APER))
 prnlog('#SKY_ANNUL: {}'.format([SKY_ANNUL1, SKY_ANNUL2]))
 prnlog('#SUBPIXEL: {}'.format(SUBPIXEL))
 
-# SET the file name of observation log 
+# SET the file name of observation log
 flog = open(LOGFILE, 'w')
 # ==================================================================
-#  LOOP of images for aperture photometry 
+#  LOOP of images for aperture photometry
 # ==================================================================
 for i, fname in enumerate(flist):
     fidx = os.path.splitext(fname)[0]
 
-    # READ the FITS file 
+    # READ the FITS file
     hdu = fits.open(fname)[0]
     img, hdr = hdu.data, hdu.header
     ny, nx = img.shape
@@ -108,22 +111,18 @@ for i, fname in enumerate(flist):
             AIRMASS = airmass(hdr.get('ALT'))
         except:
             AIRMASS = 0
-    try:
-        GAIN = hdr['EGAIN']
-    except:
-        GAIN = EGAIN
     # DISPLAY
     prnlog('#RUN:  %i / %i ' % (i + 1, NFRAME))
     prnlog('#IMAGE/DATE-OBS: %s [%i,%i] %s' % (fidx, nx, ny, DATEOBS))
     prnlog('#OBJECT/EXPTIME/FILTER: {} {} {}'.format(TARGET, EXPTIME, FILTER))
 
     # IMAGE processing for photometry and plot
-    # CALC. the sigma of image 
+    # CALC. the sigma of image
     iavg, imed, istd = sigma_clip(img[BOX:-BOX, BOX:-BOX])
     prnlog(f'#IMAGE STATS: {imed:.2f} ({istd:.2f})')
 
     # ============================================================================
-    # FIND the stars 
+    # FIND the stars
     # ===========================================================================
     ally, allx = find_stars_th(img, imed + istd * THRES, saturation=(True, SATU),
                                detection_area=int(FWHM_CUT1), margin=BOX)
@@ -137,180 +136,43 @@ for i, fname in enumerate(flist):
     ax.set_xlim(0, nx)
     ax.set_ylim(ny, 0)
 
-    # OPEN the output file of Aperture Photometry 
-    fout = open(fidx + '.apw', 'w')
-    # MAKE the lists for checking duplicate stars. 
-    xlist, ylist = [], []
-    # SORT the stars using X-axis position
-    # ss = np.argsort(ax)
-    # LOOP for each star
+    mp_par = par.copy()
+    mp_par.update({'EXPTIME': EXPTIME})
+    mp_par.update({'FIDX': fidx})
+    mp_par.update({'ISTD': istd})
+    mp_par.update({'IMG': img})
+    results = []
     for cx, cy in zip(allx, ally):
+        results.append(run_apphot(cx, cy, mp_par))
+    '''
+    pool = mp.Pool(int(mp.cpu_count()/2))
+    results = [pool.apply(run_apphot, (cx, cy, mp_par)) for cx, cy in zip(allx, ally)]
+    pool.close()
+    '''
 
-        # EXCLUDE the stars near the border 
-        if (cx < BOX) | (cy < BOX) | (cx > nx - BOX) | (cy > ny - BOX):
-            continue
+    # OPEN the output file of Aperture Photometry
+    fout = open(fidx + '.apw', 'w')
+    # for checking the duplicate stars
+    xlist, ylist = [], []
+    for fstr in results:
+        if fstr is None: continue
+        apinfo = fstr.split()
+        fx, fy = float(apinfo[0]), float(apinfo[1])
+        if len(xlist) >= 1:
+            c_rsq = (np.array(xlist) - fx) ** 2 + (np.array(ylist) - fy) ** 2
+            if min(c_rsq) < FWHM_CUT2 ** 2:
+                prnlog(f'{fidx} [FAIL] {fx:5.0f} {fy:5.0f} rsq = {min(c_rsq):.2f}; TOO CLOSE ')
+                continue
 
-        # DEFINE the box for photometry (cropping) 
-        x0, y0 = int(cx) - BOX, int(cy) - BOX
-        data = img[(y0):(y0 + 2 * BOX), (x0):(x0 + 2 * BOX)].copy()
-
-        # FIT the star profile with 2D Moffat function 
-        maxi, background, peak, y_cen, x_cen, fwhm1, fwhm2, ang = \
-            fit_gauss_elliptical([y0, x0], data)
-        pfwhm = fwhm2 * PSCALE
-        # PRINT stellar statistics
-
-        # CHECK the condition of star
-        error_msg = ''
-        if len(xlist) > 1:
-            crsq = (np.array(xlist) - x_cen) ** 2 + (np.array(ylist) - y_cen) ** 2
-            if min(crsq) < (FWHM_CUT2) ** 2:
-                error_msg += 'TOO CLOSE, '
-        if peak < istd:
-            error_msg += 'TOO WEAK, '
-        if (fwhm2 < FWHM_CUT1) | (fwhm2 > FWHM_CUT2):
-            error_msg += 'TOO LARGE/SMALL, '
-        if fwhm1 / fwhm2 < FWHM_ECC:
-            error_msg += 'TOO OVAL, '
-        if (x_cen - cx) ** 2 + (y_cen - cy) ** 2 > FWHM_CUT2 ** 2:
-            error_msg += 'FIT-OFFSET, '
-
-        if error_msg != '':
-            prnlog(f'{fidx} {cx:5d} {cy:5d} [FAIL] FWHM=[{fwhm1:.1f},{fwhm2:.1f}] PEAK={peak:.1f}  {error_msg}')
-            continue
-
-        # ----------------------------------------------------------------
-        # APPLY subpixel method for precise photometry
-        # ----------------------------------------------------------------
-        imgy, imgx = np.indices(data.shape)
-        imgy, imgx = imgy + y0, imgx + x0
-        rsq = (imgx - x_cen) ** 2 + (imgy - y_cen) ** 2
-        if SUBPIXEL == 1:
-            subdata = data.copy()
-            rsq_sub = rsq.copy()
-        else:
-            subdata = np.zeros([2 * BOX * SUBPIXEL, 2 * BOX * SUBPIXEL])
-            for i in range(SUBPIXEL):
-                for j in range(SUBPIXEL):
-                    subdata[i::SUBPIXEL, j::SUBPIXEL] = data[:, :] / float(SUBPIXEL ** 2)
-            suby, subx = np.indices(subdata.shape) / float(SUBPIXEL)
-            subx, suby = subx + x0, suby + y0
-            rsq_sub = (subx - x_cen) ** 2 + (suby - y_cen) ** 2
-
-            # ----------------------------------------------------------------
-        # DETERMINE sky backgrounds 
-        # ----------------------------------------------------------------
-        cond = (SKY_ANNUL1 ** 2 < rsq) & (rsq < SKY_ANNUL2 ** 2)
-        bgdpixels = data[cond].flatten()
-        bcnt = len(bgdpixels)
-        bavg, bmed, bsig = sigma_clip(bgdpixels)
-        bvar = bsig ** 2
-
-        # DEFINE the list for each aperture 
-        aflx, aferr, amag, amerr = [], [], [], []
-        # LOOP for the aperture sizes
-        for k in range(N_APER):
-            flxpixels = subdata[rsq_sub < (PHOT_APER[k]) ** 2].flatten()
-            ssum = np.sum(flxpixels)
-            scnt = float(len(flxpixels)) / float(SUBPIXEL ** 2)
-
-            # CALC. the total flux and magnitude of the star 
-            flx, ferr, mag, merr = cal_magnitude(ssum, bmed, bvar, scnt, bcnt, gain=GAIN)
-            mag = mag + 2.5 * np.log10(EXPTIME)
-            flx, ferr = flx / EXPTIME, ferr / EXPTIME
-
-            # SAVE into the list 
-            aflx.append(flx)
-            aferr.append(ferr)
-            amag.append(mag)
-            amerr.append(merr)
-
-        if min(aflx) < 0:
-            error_msg = 'Negative flux={}'.format(aflx)
-            prnlog(
-                f'{fidx} {cx:5d} {cy:5d} [FAIL] FWHM={pfwhm:.1f}" PEAK={peak:.1f} A/B={fwhm1 / fwhm2:.1f} {error_msg}')
-            continue
-
-        # WRITE photometry info. into the file
-        fstr = '%9.3f %9.3f ' % (x_cen, y_cen)
-        fstr1, fstr2, fstr3, fstr4 = '', '', '', ''
-        for k in range(N_APER):
-            fstr1 = fstr1 + '%12.3f ' % (aflx[k],)
-            fstr2 = fstr2 + '%12.3f ' % (aferr[k],)
-            fstr3 = fstr3 + '%8.3f ' % (amag[k],)
-            fstr4 = fstr4 + '%8.3f ' % (amerr[k],)
-        fstr = fstr + fstr1 + fstr2 + fstr3 + fstr4
-        fstr = fstr + '%12.3f %12.3f' % (bmed, bsig)
         fout.write(fstr + '\n')
 
-        # SAVE star-coord. for checking duplicate stars         
-        xlist.append(x_cen)
-        ylist.append(y_cen)
-
-        # MARK the star that was completed for photometry  
+        # MARK the star that was completed for photometry
         for Rap in PHOT_APER:
-            aper = Circle((x_cen, y_cen), Rap, fc='none', ec='b', alpha=0.5, lw=1)
+            aper = Circle((fx, fy), Rap, fc='none', ec='b', alpha=0.5, lw=1)
             ax.add_patch(aper)
-
-        # ==========================================================================
-        # PLOT the each star profile and image 
-        # ==========================================================================
-        if not PLOT_FLAG:
-            continue
-
-        figs, (ax0, ax1, ax2) = plt.subplots(num=99, ncols=3, figsize=(12, 3.5))
-        ax0.set_aspect(1)
-        ax1.set_aspect(1)
-        ax2.set_aspect(1)
-        # plot the box image 
-        cmin, cmax = background, background + peak
-        ax0.imshow(-subdata, vmax=(-cmin/SUBPIXEL**2), vmin=(-cmax/SUBPIXEL**2), cmap='gray')
-        tt = np.linspace(0, 2 * np.pi, 200)
-        # plot the aperture in the box image 
-        sub_xc, sub_yc = SUBPIXEL * (x_cen - x0), SUBPIXEL * (y_cen - y0)
-        for k in range(len(PHOT_APER)):
-            apr = Wedge([sub_xc, sub_yc], SUBPIXEL * PHOT_APER[k], 0, 360, width=BOX / 500, color='r', alpha=0.8)
-            ax0.add_patch(apr)
-        # plot the sky annulus in the box image                         
-        a_mid = SUBPIXEL * (SKY_ANNUL1 + SKY_ANNUL2) / 2.0
-        a_wid = SUBPIXEL * (SKY_ANNUL2 - SKY_ANNUL1) / 2.0
-        ann = Wedge([sub_xc, sub_yc], a_mid, 0, 360, width=a_wid, color='g', alpha=0.3)
-        ax0.add_patch(ann)
-        # mark the center of star 
-        ax0.plot(sub_xc, sub_yc, 'r+', ms=10, mew=1)
-        ax0.set_xlim(0, 2 * BOX * SUBPIXEL)
-        ax0.set_ylim(2 * BOX * SUBPIXEL, 0)
-        # plot the contour 
-        levels = np.linspace(cmin, cmax, 8)
-        y, x = np.indices(data.shape)
-        ax1.contour(x, y, data, levels)
-        ax1.set_ylim(2 * BOX - 0.5, -0.5)
-        ax1.set_xlim(-0.5, 2 * BOX - 0.5)
-        # plot the semi-major axis in contour
-        dx, dy = fwhm2 / 2 * np.sin(ang), fwhm2 / 2 * np.cos(ang)
-        ax1.plot([x_cen - x0 - dx, x_cen - x0 + dx], [y_cen - y0 - dy, y_cen - y0 + dy], 'r-', lw=4, alpha=0.5)
-        # plot the semi-minor axis in contour
-        dx, dy = fwhm1 / 2 * np.sin((ang - np.pi / 2)), fwhm1 / 2 * np.cos((ang - np.pi / 2))
-        ax1.plot([x_cen - x0 - dx, x_cen - x0 + dx], [y_cen - y0 - dy, y_cen - y0 + dy], 'b-', lw=4, alpha=0.5)
-        ax1.set_title('(%04d,%04d)' % (x_cen, y_cen))
-        ax1.grid()
-        # plot the semi-major/minor axis in the frame
-        dx, dy = 10 * fwhm2 * np.sin(ang), 10 * fwhm2 * np.cos(ang)
-        ax2.plot([x_cen - dx, x_cen + dx], [y_cen - dy, y_cen + dy], 'r-', lw=3)
-        dx, dy = 10 * fwhm1 * np.sin((ang - np.pi / 2)), 10 * fwhm1 * np.cos((ang - np.pi / 2))
-        ax2.plot([x_cen - dx, x_cen + dx], [y_cen - dy, y_cen + dy], 'b-', lw=3)
-        ax2.set_ylim(ny, 0)
-        ax2.set_xlim(0, nx)
-        # text the information of fitting 
-        strtmp = '(BGD,PEAK)=(%i,%i) \nFWHM=%.3f\" PA=%+id' % \
-                 (background, peak, pfwhm, np.rad2deg(ang))
-        ax2.text(0.5, 0.99, strtmp, fontweight='bold', color='k', alpha=0.7, ha='center', va='top',
-                 transform=ax2.transAxes, fontsize=12)
-        ax2.grid()
-        figs.savefig(fidx + '-%04d_%04d' % (cx, cy))
-        figs.clf()
-
-        del data, subdata, rsq_sub
+        # save the coordinate of valid stars
+        xlist.append(fx)
+        ylist.append(fy)
 
     # SAVE/CLOSE image figure 
     fig.savefig(fidx + '-phots')
@@ -325,3 +187,4 @@ for i, fname in enumerate(flist):
 
 # CLOSE log and print files
 flog.close()
+

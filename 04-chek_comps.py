@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-05-chek_comps
+04-chek_comps
  (1) READ the time-series photometry files (apx)
  (2) GENERATE the LC plots after filtering with SNR / dMAG
 

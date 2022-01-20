@@ -1,14 +1,14 @@
 WORKDIR   ./180326-HAT-P-12b
 BINNING   1            # (APPHOT) BINNING option of CCD images for processing
-STARBOX   40           # (APPHOT) box half-size for photometry [pixel]
+STARBOX   50           # (APPHOT) box half-size for photometry [pixel]
 THRES     5            # (APPHOT) n-sigma threshold for finding stars
-FWHMCUT   3,20         # (APPHOT) FWHM lower/upper limit for filtering non-stars [pixel]
+FWHMCUT   5,30         # (APPHOT) FWHM lower/upper limit for filtering non-stars [pixel]
 SATU      60000        # (APPHOT) saturation level limit for filtering [ADU]
 PHOTAPER  10,20,30     # (APPHOT) (CSV) apertures for photometry [pixel] (csv)
-SKYANNUL  30,34        # (APPHOT) (CSV) sky-annulus for background [pixel]
-SUBPIXEL  1            # (APPHOT) the division number for subpixel method
+SKYANNUL  30,40        # (APPHOT) (CSV) sky-annulus for background [pixel]
+SUBPIXEL  5            # (APPHOT) the division number for subpixel method
 EGAIN     1.0          # (APPHOT) the gain of CCD for error estimation
-PSCALE    0.464        # (APPHOT) pixel scale in stellar profile plot 0.3867,0.464
+PSCALE    0.387        # (APPHOT) pixel scale in stellar profile plot 0.3867,0.464
 STARPLOT  0            # (APPHOT) (BOOL) plotting the diagram for each star
 LOGFILE   wobs.log     # (APPHOT) log file name for LC processing
 APERUSED  2            # (TIMESERIES) index of aperture(in PHOTAPER) for LC
@@ -16,9 +16,19 @@ SHIFTPLOT 1            # (TIMESERIES) flag for plotting all shift-images
 OBSDATE   180326       # (TIMESERIES) observation date
 TARGETNAM HAT-P-12b    # (TIMESERIES) target name
 TARGETNUM 13           # (TIMESERIES) target star numbers in finding-chart
-COMPNUMS  10,17,22     # (TIMESERIES) (CSV) comparison star numbers
-CHKSIG    0.02         # (TIMESERIES) STD checking criteria for LC test
+COMPNUMS  10,17,21     # (TIMESERIES) (CSV) comparison star numbers
+CHKSIG    0.4          # (TIMESERIES) STD checking criteria for LC test
 CHKDELM   3            # (TIMESERIES) DEL_MAG checking criteria for LC test
-OBSLAT    34.5261362   # The latitude[deg] of the observatory (for HJD)
-OBSLON    127.4470482  # The longitude[deg] of the observatory (for HJD)
-OBSELEV   81.35789     # The elevation[m] of the observatory (for HJD)
+OBSLAT    34.5261362   # (for HJD) The latitude[deg] of the observatory 
+OBSLON    127.4470482  # (for HJD) The longitude[deg] of the observatory
+OBSELEV   81.35789     # (for HJD) The elevation[m] of the observatory
+FILTER    R            # (FITTING) filter information
+CONTCUT   0.995,1.5    # (FITTING) continuum level params; lower, upper cut level
+CONTCOEF  0,0          # (FITTING) continuum fitting order or level; "0"/"0,0"/"0,0,0"
+DMIN      0            # (FITTING) binning interval in minutes (OFF: negative)
+PLOTDESC  DOAO         # (FITTING) description for plot title (no spacing)
+PER       5.0          # (FITTING)(INPUT) orbital period
+RSTAR     1.0          # (FITTING)(INPUT) stellar radius in R_sun
+A         0.05         # (FITTING)(INITIAL) semi-major axis in au
+RR        0.1          # (FITTING)(INITIAL) planetary radius in R_star
+B         0.1          # (FITTING)(INITIAL) impact parameter
