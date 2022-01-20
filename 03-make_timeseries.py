@@ -32,10 +32,10 @@ OBSDATE = par['OBSDATE']
 TARGETNAME = par['TARGETNAM']
 WNAME = OBSDATE+'-'+TARGETNAME
 
-prnlog('#WORK: make_timeseries')
-prnlog('#WORK DIR: {}'.format(WORKDIR))
-prnlog('#SHIFT PLOT: {}'.format(SHIFT_PLOT))
-prnlog('#LOG FILE: {}'.format(LOGFILE))
+prnlog(f"#WORK: make_timeseries")
+prnlog(f"#WORK DIR: {WORKDIR}")
+prnlog(f"#SHIFT PLOT: {SHIFT_PLOT}")
+prnlog(f"#LOG FILE: {LOGFILE}")
        
 # READ log file and 
 # SET the fiducial frame index and position 

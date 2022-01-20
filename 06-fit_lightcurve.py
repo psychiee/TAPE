@@ -13,10 +13,11 @@ import numpy as np
 import matplotlib.pyplot as plt 
 from scipy.optimize import curve_fit
 from astroquery.ipac.nexsci.nasa_exoplanet_archive import NasaExoplanetArchive
-from photlib import read_params
+from photlib import read_params, prnlog
 
 # PLOT the model of fitting results
 DEMO = False 
+
 
 def run_fit(par):
     
@@ -58,8 +59,8 @@ def run_fit(par):
     CDIR = os.path.abspath(os.path.curdir)
     os.chdir(WORKDIR) # GO TO DIR
     # ====================================
-    print ('PER=%.4f RSTAR=%.4f ' % (PER, RSTAR))
-    print ('A=%.4f RR=%.3f B=%.3f ' % (A, RR, B))
+    prnlog(f"PER={PER:.5f} RSTAR={RSTAR:.4f}")
+    prnlog(f"A={A:.4f} RR={RR:.3f} B={B:.3f}")
     
     tp, rp, rb = PER, RR, B
     ra = (A / RSTAR) * 215.093991
@@ -87,15 +88,14 @@ def run_fit(par):
         fig.savefig(WORKNAME+'-DTR.png')
         plt.close('all')
     tc = np.sum(x*(1-y)**2) / np.sum((1-y)**2)
-    print (tc+x0)
+    prnlog(f"INITIAL T_C = {tc+x0}")
     
-    fig, (ax1, ax2) = plt.subplots(nrows=2, figsize=(10,7), \
-            sharex=True, gridspec_kw={'height_ratios':[4,1]})
+    fig, (ax1, ax2) = plt.subplots(nrows=2, figsize=(10,7), sharex=True, gridspec_kw={'height_ratios':[4,1]})
     fig.subplots_adjust(hspace=0.003)
     # save detrending results 
     fbin = open(WORKNAME+'-NORM.txt', 'w')
     for kx, ky, kerr in zip(x+x0, y, yerr):
-        fbin.write('%16.8f %12.8f %12.8f \n' % (kx, ky, kerr))
+        fbin.write(f"{kx:16.8f} {ky:12.8f} {kerr:12.8f}\n")
     fbin.close()
     
     if DMIN > 0: 
@@ -116,7 +116,7 @@ def run_fit(par):
         # SAVE the binning data into the file 
         fbin = open(WORKNAME+'-DMIN%02i.txt' % (DMIN,), 'w')
         for kx, ky, kerr in zip(rx+x0, ry, ryerr):
-            fbin.write('%16.8f %12.8f %12.8f \n' % (kx, ky, kerr))
+            fbin.write(f"{kx:16.8f} {ky:12.8f} {kerr:12.8f}\n")
         fbin.close()
     else:
         rx, ry, ryerr = x, y, yerr
@@ -134,8 +134,7 @@ def run_fit(par):
     # PLOT fitting result 
     xfit = np.linspace(np.min(rx),np.max(rx),1000)
     yfit = light_curve(xfit, *c)
-    ax1.plot(xfit, yfit, 'r-', linewidth=2, alpha=0.9, \
-             label='Fitting, RMS=%.5f' % (rms,))
+    ax1.plot(xfit, yfit, 'r-', linewidth=2, alpha=0.9, label='Fitting, RMS=%.5f' % (rms,))
     
     # DEFINE the fitting parameters
     c_ra2p, c_tc, c_rp, c_rb = c
@@ -152,26 +151,22 @@ def run_fit(par):
     c_p_err = c_rp_err * RSTAR / 0.10045
     # PRINT the results 
 
-    print ('INPUTS-------------')
-    print ('Rp = %f' % (RR * RSTAR / 0.10045, ))
-    print ('a = %f' % (A,))
-    print ('b = %f' % (B,))
-    print ('OUTPUTS------------')
-    print ('Rp/Rs = %.2f (%.2f)' % (c_rp, c_rp_err))
-    print ('Rp = %.2f (%.2f)' % (c_p, c_p_err))
-    print ('a/Rs = %.2f (%.2f)' % (c_ra2p*tp, c_ra2p_err*tp))
-    print ('a = %.5f (%.5f)' % (c_a, c_a_err))
-    print ('b = %.2f (%.2f)' % (c_rb, c_rb_err))
-    print ('i = %.1f (%.1f)' % (incl,  incl_err))
+    prnlog('INPUTS-------------')
+    prnlog(f"Rp = {RR * RSTAR / 0.10045}")
+    prnlog(f"a = {A}")
+    prnlog(f"b = {B}")
+    prnlog('OUTPUTS------------')
+    prnlog(f"Rp/Rs = {c_rp:.3f} ({c_rp_err:.3f})")
+    prnlog(f"Rp = {c_p,:.2f} ({c_p_err:.2f})")
+    prnlog(f"a/Rs = {c_ra2p*tp:.4f}, ({c_ra2p_err*tp:.4f})")
+    prnlog(f"a = {c_a:.5f} ({c_a_err:.5f})")
+    prnlog(f"b = {c_rb:.2f} ({c_rb_err:.2f})")
+    prnlog(f"i = {incl:.1f} ({incl_err:.1f})")
     
     fout = open(WORKNAME+'-fitting.log','a')
     dstr = time.strftime('%Y-%m-%dT%H:%M:%S')
-    sfmt = ' %18s %12.8f %8.5f' + \
-           ' %16.7f %8.5f %8.5f %8.5f' + \
-           ' %16.7f %8.5f %8.5f %8.5f \n'
-    fline = sfmt % (WORKNAME, PER, RSTAR, \
-                    x0+c_tc, c_p, c_a, incl, \
-                    c_tc_err, c_p_err, c_a_err, incl_err)
+    sfmt = ' %18s %12.8f %8.5f %16.7f %8.5f %8.5f %8.5f %16.7f %8.5f %8.5f %8.5f\n'
+    fline = sfmt % (WORKNAME, PER, RSTAR, x0+c_tc, c_p, c_a, incl, c_tc_err, c_p_err, c_a_err, incl_err)
     fout.write(dstr+fline)
     fout.close()
     # show the parameters of planet
@@ -243,6 +238,7 @@ $i$ = %.3f $deg$ ($b$ = %.3f)'''
     
     return c_rp, c_rb
 
+
 def fit_light_curve(rx, ry, ryerr, ra2p, tc, rp, rb, BOUND=0):    
     # FITTING with curve_fit    
     if BOUND:
@@ -263,7 +259,8 @@ def fit_light_curve(rx, ry, ryerr, ra2p, tc, rp, rb, BOUND=0):
             cerr.append(0.0)
 
     return c, cerr
-    
+
+
 def light_curve(x, *p):
     '''
     Generate the light curve
@@ -336,6 +333,7 @@ def fdisk(rx, rp):
     
     return np.nansum(fr)/np.nansum(ftot)
 
+
 def local_continuum(xp, yp, p0=[1,0], cuts=[0.995,1.5]):
     '''
     determine local continuum of LC
@@ -365,6 +363,8 @@ def local_continuum(xp, yp, p0=[1,0], cuts=[0.995,1.5]):
         xv, yv = xv[vv], yv[vv]
     print (coeff)
     return fcont(xp, *coeff) 
+
+
 #===============================================================================
 # SUB FUNCTIONS    
 #===============================================================================
@@ -415,6 +415,7 @@ def plotting(rp=0.1, rb=0.0):
         plt.savefig('tr_%03d_%03d_%04d.png' % (rp*100, rb*100, i))
         plt.close('all')
 
+
 def example1():
     plt.figure(figsize=(6,4))
     rp = 0.1 
@@ -428,13 +429,13 @@ def example1():
     y = light_curve(x, 0.5, 110, rp, 1.0)
     p4, = plt.plot(x,y, linewidth=3, alpha=0.5)
     
-    plt.legend([p1,p2,p3,p4], \
-               ['b=0','b=0.5','b=0.8','b=1.0'], loc='lower left')
+    plt.legend([p1,p2,p3,p4], ['b=0','b=0.5','b=0.8','b=1.0'], loc='lower left')
     plt.title('P = 200, Rp/Rs = 0.1')
     dy=rp**2
     plt.ylim(1-dy*1.5, 1+dy*0.05)
     plt.grid()
     plt.show()
+
 
 if __name__ == '__main__':
     par = read_params()

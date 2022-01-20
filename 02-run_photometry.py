@@ -71,14 +71,14 @@ flist.sort()
 
 # DISPLAY the information of photometry
 NFRAME = len(flist)
-prnlog('#WORK: run_photometry')
-prnlog('#WORK DIR: {}'.format(WORKDIR))
-prnlog('#TOTAL NUMBER of FILES: {}'.format(NFRAME))
-prnlog('#THRES = {}'.format(THRES))
-prnlog('#SATU. LEVEL = {}'.format(SATU))
-prnlog('#PHOT_APER: {}'.format(PHOT_APER))
-prnlog('#SKY_ANNUL: {}'.format([SKY_ANNUL1, SKY_ANNUL2]))
-prnlog('#SUBPIXEL: {}'.format(SUBPIXEL))
+prnlog(f"#WORK: run_photometry")
+prnlog(f"#WORK DIR: {WORKDIR}")
+prnlog(f"#TOTAL NUMBER of FILES: {NFRAME}")
+prnlog(f"#THRES = {THRES}")
+prnlog(f"#SATU. LEVEL = {SATU}")
+prnlog(f"#PHOT_APER: {PHOT_APER}")
+prnlog(f"#SKY_ANNUL: {[SKY_ANNUL1, SKY_ANNUL2]}")
+prnlog(f"#SUBPIXEL: {SUBPIXEL}")
 
 # SET the file name of observation log
 flog = open(LOGFILE, 'w')
@@ -112,14 +112,14 @@ for i, fname in enumerate(flist):
         except:
             AIRMASS = 0
     # DISPLAY
-    prnlog('#RUN:  %i / %i ' % (i + 1, NFRAME))
-    prnlog('#IMAGE/DATE-OBS: %s [%i,%i] %s' % (fidx, nx, ny, DATEOBS))
-    prnlog('#OBJECT/EXPTIME/FILTER: {} {} {}'.format(TARGET, EXPTIME, FILTER))
+    prnlog(f"#RUN:  {i+1} / {NFRAME}")
+    prnlog(f"#IMAGE/DATE-OBS: {fidx} {[nx, ny]} {DATEOBS}")
+    prnlog(f"#OBJECT/EXPTIME/FILTER: {TARGET} {EXPTIME} {FILTER}")
 
     # IMAGE processing for photometry and plot
     # CALC. the sigma of image
     iavg, imed, istd = sigma_clip(img[BOX:-BOX, BOX:-BOX])
-    prnlog(f'#IMAGE STATS: {imed:.2f} ({istd:.2f})')
+    prnlog(f"#IMAGE STATS: {imed:.2f} ({istd:.2f})")
 
     # ============================================================================
     # FIND the stars
