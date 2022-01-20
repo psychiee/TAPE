@@ -16,7 +16,8 @@ The Goal of Project
 - 03-make_timeseries.py (run star-matching and generate the time-series of magnitudes)
 - 04-chek_comps.py (find the comparisons for differential photometry)
 - 05-plot_lightcurve.py (draw the light curves [flux] for the selected comparisons)
- 
+- 06-fit_lightcurve.py (fit the light curve with the model of transiting planet)
+
 ## How to use 
  
 ### Prepare a set of images obtained at DOAO using NYSC 1m telescope.
@@ -51,6 +52,16 @@ CHKDELM   3            # (TIMESERIES) DEL_MAG checking criteria for LC test
 OBSLAT    34.5261362   # The latitude[deg] of the observatory (for HJD)
 OBSLON    127.4470482  # The longitude[deg] of the observatory (for HJD)
 OBSELEV   81.35789     # The elevation[m] of the observatory (for HJD)
+FILTER    R            # (FITTING) filter information
+CONTCUT   0.995,1.5    # (FITTING) continuum level params; lower, upper cut level
+CONTCOEF  0,0          # (FITTING) continuum fitting order or level; "0"/"0,0"/"0,0,0"
+DMIN      0            # (FITTING) binning interval in minutes (OFF: negative)
+PLOTDESC  DOAO         # (FITTING) description for plot title (no spacing)
+PER       5.0          # (FITTING)(INPUT) orbital period
+RSTAR     1.0          # (FITTING)(INPUT) stellar radius in R_sun
+A         0.05         # (FITTING)(INITIAL) semi-major axis in au
+RR        0.1          # (FITTING)(INITIAL) planetary radius in R_star
+B         0.1          # (FITTING)(INITIAL) impact parameter
 ```
 - WORKDIR: relative or absolute path of working directory
 - BINNING: pixel binning of processing images
@@ -102,6 +113,9 @@ OBSELEV   81.35789     # The elevation[m] of the observatory (for HJD)
   - Generate the finding chart with the target and comparisons.
   - Generate the light curve for each comparison. 
   - Generate the magnitude difference between the comparisons for verification. 
-  
+- Run 06-fit_lightcurve.py
+  - Read the light curve data (wYYMMDD-XXXXX-Z.dat)
+  - Fit the light curve with the model of transiting planet
+  - Generate the detrending and fitting results
    
        
