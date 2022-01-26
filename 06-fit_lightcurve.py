@@ -12,7 +12,6 @@ import time, os
 import numpy as np
 import matplotlib.pyplot as plt 
 from scipy.optimize import curve_fit
-from astroquery.ipac.nexsci.nasa_exoplanet_archive import NasaExoplanetArchive
 from photlib import read_params, prnlog
 
 # PLOT the model of fitting results
@@ -37,28 +36,24 @@ def run_fit(par):
     DMIN = float(par['DMIN'])
     PLOTDESC = par['PLOTDESC']
     # CHECK the parameters in database
-    nea_name = f"{PNAME[:-1]} {PNAME[-1]}"
+    dnames = np.genfromtxt('nea.csv', usecols=(0,), dtype='U', delimiter=',')
+    dpars = np.genfromtxt('nea.csv', usecols=(1,2,3,4,5), delimiter=',')
 
-    nea_table = NasaExoplanetArchive.query_criteria(
-        table="pscomppars",
-        select="*",
-        where=f"pl_name = '{nea_name}' and pl_orbper > 0 and pl_orbsmax > 0")
-    try:
-        PER = nea_table['pl_orbper'][0].value
-        RSTAR = nea_table['st_rad'][0].value
-        A = nea_table['pl_orbsmax'][0].value
-        RPLANET = nea_table['pl_radj'][0].value
+    vv = np.where(dnames == PNAME)[0]
+    if len(vv) > 0:
+        PER = dpars[vv[0],0]
+        if ~np.isnan(dpars[vv[0],1]): RSTAR = dpars[vv[0],1]
+        if ~np.isnan(dpars[vv[0],2]): A = dpars[vv[0],2]
+        if ~np.isnan(dpars[vv[0],3]): RPLANET = dpars[vv[0],3]
         RR = (RPLANET / RSTAR) * 0.10045
-        B = nea_table['pl_imppar'][0].value
-    except:
-        print(nea_table)
-        pass
+        if ~np.isnan(dpars[vv[0],4]): B = dpars[vv[0],4]
 
     # ====================================
     # MOVE to the working directory
     CDIR = os.path.abspath(os.path.curdir)
     os.chdir(WORKDIR) # GO TO DIR
     # ====================================
+    prnlog("From DATABASE (NEA)")
     prnlog(f"PER={PER:.5f} RSTAR={RSTAR:.4f}")
     prnlog(f"A={A:.4f} RR={RR:.3f} B={B:.3f}")
     
@@ -152,12 +147,14 @@ def run_fit(par):
     # PRINT the results 
 
     prnlog('INPUTS-------------')
+    prnlog(f"Tc = {x0+tc:.5f}")
     prnlog(f"Rp = {RR * RSTAR / 0.10045}")
     prnlog(f"a = {A}")
     prnlog(f"b = {B}")
     prnlog('OUTPUTS------------')
+    prnlog(f"Tc = {x0+c_tc:.5f} ({c_tc_err:.5f})")
     prnlog(f"Rp/Rs = {c_rp:.3f} ({c_rp_err:.3f})")
-    prnlog(f"Rp = {c_p,:.2f} ({c_p_err:.2f})")
+    prnlog(f"Rp = {c_p:.2f} ({c_p_err:.2f})")
     prnlog(f"a/Rs = {c_ra2p*tp:.4f}, ({c_ra2p_err*tp:.4f})")
     prnlog(f"a = {c_a:.5f} ({c_a_err:.5f})")
     prnlog(f"b = {c_rb:.2f} ({c_rb_err:.2f})")
@@ -210,28 +207,6 @@ $i$ = %.3f $deg$ ($b$ = %.3f)'''
         plt.savefig(WORKNAME+'-fitting.png')
         
     plt.close('all')
-#    
-#    plt.plot([c_tc,c_tc],[y2.min()*0.975,y2.max()*1.01], '--', lw=2, alpha=0.6)
-#    desc = 'P = %.4f days\na = %.4f AU (a/R* = %.3f)\n' + \
-#           'Tc - HJD0 = %.3f (HJD0 = %i)\nRp = %.3f Rj (Rp/R* = %.3f)\n' + \
-#           'i = %.3f deg (b = %.3f)'
-#    desc = desc % (PER, c_a, c_ra2p*tp, c_tc, x0, c_p, c_rp, incl, c_rb)
-#    plt.text(0.02, 0.05, desc, \
-#             transform=plt.gca().transAxes, fontweight='bold', color='r', alpha=1) 
-#    plt.legend(loc='lower right',fontsize=12)
-#    plt.grid()
-#    plt.ylim(y2.min()*0.975,y2.max()*1.01)
-#    plt.xlim(x.min(), x.max())    
-#    plt.xlabel('HJD-%i [day]' % (x0,)) 
-#    plt.ylabel('Normalized Flux') 
-#    plt.title(WORKNAME+' ('+PLOTDESC+')')
-#    
-#    if DMIN > 0: 
-#        plt.savefig(WORKNAME+'-fitting-DMIN%02i.png' % (DMIN,))
-#    else:
-#        plt.savefig(WORKNAME+'-fitting.png')
-#        
-#    plt.close('all')
     # ====================================
     os.chdir(CDIR) # RETURN
     # ====================================
@@ -361,7 +336,7 @@ def local_continuum(xp, yp, p0=[1,0], cuts=[0.995,1.5]):
         if (len(vv) < 15): break
         if (len(vv) == len(xv)): break
         xv, yv = xv[vv], yv[vv]
-    print (coeff)
+    #print (coeff)
     return fcont(xp, *coeff) 
 
 

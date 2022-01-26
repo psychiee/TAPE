@@ -56,7 +56,7 @@ FID = FLIST[0]
 # ------------------------------------------
 # YOU SHOULD CUSTOMIZE THIS NUMBER OF STARS TO MATCH
 # ------------------------------------------
-NCUT = 20
+NCUT = 40
 # ------------------------------------------
 dat = np.genfromtxt(FID+'.apw')
 tx, ty = dat[:,0], dat[:,1] 
