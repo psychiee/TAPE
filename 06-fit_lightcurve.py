@@ -44,8 +44,7 @@ def run_fit(par):
         PER = dpars[vv[0],0]
         if ~np.isnan(dpars[vv[0],1]): RSTAR = dpars[vv[0],1]
         if ~np.isnan(dpars[vv[0],2]): A = dpars[vv[0],2]
-        if ~np.isnan(dpars[vv[0],3]): RPLANET = dpars[vv[0],3]
-        RR = (RPLANET / RSTAR) * 0.10045
+        if ~np.isnan(dpars[vv[0],3]): RR = dpars[vv[0],3]
         if ~np.isnan(dpars[vv[0],4]): B = dpars[vv[0],4]
 
     # ====================================

@@ -163,7 +163,6 @@ for i, fname in enumerate(flist):
             if min(c_rsq) < FWHM_CUT2 ** 2:
                 prnlog(f'{fidx} [FAIL] {fx:5.0f} {fy:5.0f} rsq = {min(c_rsq):.2f}; TOO CLOSE ')
                 continue
-
         fout.write(fstr + '\n')
 
         # MARK the star that was completed for photometry
