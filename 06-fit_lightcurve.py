@@ -17,7 +17,6 @@ from photlib import read_params, prnlog
 # PLOT the model of fitting results
 DEMO = False 
 
-
 def run_fit(par):
     
     WORKDIR = par['WORKDIR']
@@ -112,8 +111,7 @@ def run_fit(par):
             ry.append(np.mean(y[rr]))
             ryerr.append(np.std(y[rr]))
         rx, ry, ryerr = np.array(rx), np.array(ry), np.array(ryerr)
-        ax1.errorbar(rx,ry,yerr=ryerr,ms=5,fmt='bo',ecolor='b',alpha=0.6,\
-                     label='Avg in %i min.' % (DMIN,))
+        ax1.errorbar(rx,ry,yerr=ryerr,ms=5,fmt='bo',ecolor='b',alpha=0.6, label='Avg in %i min.' % (DMIN,))
         #bdat = np.array([rx+x0,ry,ryerr]).T
         # SAVE the binning data into the file 
         fbin = open(WORKNAME+'-DMIN%02i.txt' % (DMIN,), 'w')
@@ -122,8 +120,7 @@ def run_fit(par):
         fbin.close()
     else:
         rx, ry, ryerr = x, y, yerr
-        ax1.errorbar(rx,ry,yerr=ryerr,ms=5,fmt='ko',ecolor='k',alpha=0.6, \
-                 label='Raw - %d pts' % (len(x),))
+        ax1.errorbar(rx,ry,yerr=ryerr,ms=5,fmt='ko',ecolor='k',alpha=0.6, label='Raw - %d pts' % (len(x),))
         
     # RUN fitting of LC
     c, cerr = fit_light_curve(rx, ry, ryerr, ra/tp, tc, rp, rb)        
@@ -183,11 +180,9 @@ $a$ = %.4f $AU$ ($a/R_*$ = %.3f)
 $R_P$ = %.3f $R_J$ ($R_P$/$R_*$ = %.3f)
 $i$ = %.3f $deg$ ($b$ = %.3f)'''           
     desc = desc % (PER, c_a, c_ra2p*tp, c_p, c_rp, incl, c_rb)
-    ax1.text(0.02, 0.05, desc, fontsize=14, \
-             transform=ax1.transAxes, fontweight='bold', color='r', alpha=1) 
-    ax1.text(c_tc, ymax-0.001, '$T_C$ = %.5f' % (c_tc+x0,), \
-         fontsize=14, color='r', fontweight='bold', \
-         va='top', ha='center')     
+    ax1.text(0.02, 0.05, desc, fontsize=14, transform=ax1.transAxes, fontweight='bold', color='r', alpha=1)
+    ax1.text(c_tc, ymax-0.001, '$T_C$ = %.5f' % (c_tc+x0,), fontsize=14, color='r', fontweight='bold',
+             va='top', ha='center')
     ax1.legend(loc='lower right',fontsize=12)
     ax1.grid()
     ax1.set_ylim(ymin, ymax)
@@ -224,13 +219,13 @@ $i$ = %.3f $deg$ ($b$ = %.3f)'''
 def fit_light_curve(rx, ry, ryerr, ra2p, tc, rp, rb, BOUND=0):    
     # FITTING with curve_fit    
     if BOUND:
-        c, cov = curve_fit(light_curve, rx, ry, p0=[ra2p, tc, rp, rb], \
-                           sigma=ryerr, absolute_sigma=True, method='trf', \
-                           bounds=([0.5*ra2p,tc-0.05,0.5*rp,rb-0.3],\
+        c, cov = curve_fit(light_curve, rx, ry, p0=[ra2p, tc, rp, rb],
+                           sigma=ryerr, absolute_sigma=True, method='trf',
+                           bounds=([0.5*ra2p,tc-0.05,0.5*rp,rb-0.3],
                                    [2.0*ra2p,tc+0.05,2.0*rp,rb+0.3]))     
     else:
-        c, cov = curve_fit(light_curve, rx, ry, p0=[ra2p, tc, rp, rb], \
-                       sigma=ryerr, absolute_sigma=True)
+        c, cov = curve_fit(light_curve, rx, ry, p0=[ra2p, tc, rp, rb],
+                           sigma=ryerr, absolute_sigma=True)
 
     # CALC. the errors of fitting parameters 
     cerr = []
@@ -347,9 +342,7 @@ def local_continuum(xp, yp, p0=[1,0], cuts=[0.995,1.5]):
     return fcont(xp, *coeff) 
 
 
-#===============================================================================
-# SUB FUNCTIONS    
-#===============================================================================
+# SUB FUNCTIONS
 def plotting(rp=0.1, rb=0.0):
     R, I0 = 500, 100
     pp, pb = R*rp, R*(1 - rb)
@@ -412,7 +405,7 @@ def example1():
     p4, = plt.plot(x,y, linewidth=3, alpha=0.5)
     
     plt.legend([p1,p2,p3,p4], ['b=0','b=0.5','b=0.8','b=1.0'], loc='lower left')
-    plt.title('P = 200, Rp/Rs = 0.1')
+    plt.title('Rp/Rs = 0.1')
     dy=rp**2
     plt.ylim(1-dy*1.5, 1+dy*0.05)
     plt.grid()
