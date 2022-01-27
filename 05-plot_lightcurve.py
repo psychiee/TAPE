@@ -21,10 +21,8 @@ par = read_params()
 # MOVE to the working directory
 os.chdir(par['WORKDIR'])
 
-#==================================================================
-# TARGET information 
-#==================================================================
-PHOT_APER = np.array(par['PHOTAPER'].split(','), float)   # Radius of aperture 
+# TARGET information
+PHOT_APER = np.array(par['PHOTAPER'].split(','), float)   # Radius of aperture
 N_APER = len(PHOT_APER)
 T_APER = int(par['APERUSED']) # index of used aperture
 TNUM1 = int(par['TARGETNUM'])  # Index of the target for variability
@@ -32,14 +30,14 @@ OBSDATE, TARGET = par['OBSDATE'], par['TARGETNAM']  # Obs. info.
 WNAME = OBSDATE+'-'+TARGET  # file name to save data 
 CLIST1 = np.array(par['COMPNUMS'].split(','), int) # Indices of the comparisons
 LOGFILE = par['LOGFILE']
-#==================================================================
+
 prnlog('#WORK: plot_lightcurve')
-prnlog('#WORKNAME: {}'.format(WNAME))
-prnlog('#APERTURE: [{}] {} pix'.format(T_APER, PHOT_APER[T_APER-1]))
-prnlog('#TARGET: {}'.format(TARGET))
-prnlog('#TARGET INDEX: {}'.format(TNUM1))
-prnlog('#COMPARISON INDICES: {}'.format(CLIST1))
-prnlog('#LOGFILE: {}'.format(LOGFILE))
+prnlog(f'#WORKNAME: {WNAME}')
+prnlog(f'#APERTURE: [{T_APER}] R={PHOT_APER[T_APER-1]}pix')
+prnlog(f'#TARGET: {TARGET}')
+prnlog(f'#TARGET INDEX: {TNUM1}')
+prnlog(f'#COMPARISON INDICES: {CLIST1}')
+prnlog(f'#LOGFILE: {LOGFILE}')
 
 # CONVERT number into index
 TNUM = TNUM1 - 1
@@ -98,7 +96,7 @@ for i, fidx in enumerate(FLIST):
     MAG.append(dat[:,(2*N_APER+T_APER+2)])
     MRR.append(dat[:,(3*N_APER+T_APER+2)])
     FLG.append(dat[:,(4*N_APER+4)])
-    prnlog(f'FRAME# {FRM[i]:4.0f}: Read {fidx}.apx file.')
+
 # MAKE the arrays of photometric results by JDs and stars
 # row: frames(time), col: stars(mag, flux) 
 FLX, ERR = np.array(FLX), np.array(ERR)
@@ -145,6 +143,7 @@ SERR = np.sqrt(((TFLX/CFLX**2)**2)*(CERR**2) + ((1.0/CFLX)**2)*(TERR**2))
 
 SFLG = TFLG + np.sum(FLG[:,cc], axis=1)
 vv, = np.where(SFLG == 0)
+x1, x2 = np.min(JD[vv]-JD0), np.max(JD[vv]-JD0)
 
 # PLOT the light curve by flux 
 fig, ax = plt.subplots(num=3, figsize=(10,5))
@@ -188,7 +187,6 @@ if NCOMP > 1:
             M0 = M0+dM0
     ax.grid()
     ax.set_ylim(-dM0/2, M0-dM0/2)
-    x1, x2 = np.min(chkT),np.max(chkT)
     ax.set_xlim(x1, x2+(x2-x1)*0.25)
     ax.set_ylabel('$\Delta$m')
     ax.set_xlabel('Time [days]')

@@ -27,7 +27,8 @@ def run_fit(par):
 
     WORKNAME = 'w'+ODATE+'-'+PNAME+'-'+FILTER
     DATAFILE = WORKNAME+'.dat'
-    
+    DBFILE = 'nea.csv'
+
     CONTCUT = np.array(par['CONTCUT'].split(','),float)
     CONTCOEF = np.array(par['CONTCOEF'].split(','),float)
     PER = float(par['PER'])
@@ -36,8 +37,9 @@ def run_fit(par):
     DMIN = float(par['DMIN'])
     PLOTDESC = par['PLOTDESC']
     # CHECK the parameters in database
-    dnames = np.genfromtxt('nea.csv', usecols=(0,), dtype='U', delimiter=',')
-    dpars = np.genfromtxt('nea.csv', usecols=(1,2,3,4,5), delimiter=',')
+
+    dnames = np.genfromtxt(DBFILE, usecols=(0,), dtype='U', delimiter=',')
+    dpars = np.genfromtxt(DBFILE, usecols=(1,2,3,4,5), delimiter=',')
 
     vv = np.where(dnames == PNAME)[0]
     if len(vv) > 0:
@@ -52,9 +54,15 @@ def run_fit(par):
     CDIR = os.path.abspath(os.path.curdir)
     os.chdir(WORKDIR) # GO TO DIR
     # ====================================
-    prnlog("From DATABASE (NEA)")
-    prnlog(f"PER={PER:.5f} RSTAR={RSTAR:.4f}")
-    prnlog(f"A={A:.4f} RR={RR:.3f} B={B:.3f}")
+    prnlog("#WORK: fit_lightcurve")
+    prnlog(f"#DATA FILE: {DATAFILE}")
+    prnlog(f"#EXOPLANET DATA FILE: {DBFILE}")
+    prnlog(f"#PLANET NAME: {PNAME}")
+    prnlog(f"  PER={PER:.5f}")
+    prnlog(f"  RSTAR={RSTAR:.4f}")
+    prnlog(f"  A={A:.4f}")
+    prnlog(f"  RR={RR:.3f}")
+    prnlog(f"  B={B:.3f}")
     
     tp, rp, rb = PER, RR, B
     ra = (A / RSTAR) * 215.093991

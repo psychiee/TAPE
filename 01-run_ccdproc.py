@@ -13,12 +13,16 @@ from glob import glob
 import numpy as np 
 from astropy.io import fits 
 from photlib import read_params, prnlog
+import shutil
 
 # READ the parameter file
 par = read_params() 
 
 # MOVE to the working directory
-os.chdir(par['WORKDIR'])
+WORKDIR = par['WORKDIR']
+shutil.copy('tape.par', WORKDIR)
+os.chdir(WORKDIR)
+
 prnlog('#WORK DIR: %s' % par['WORKDIR'])
 # FILTERING for binning option
 BINNING = int(par['BINNING'])
@@ -170,5 +174,5 @@ for fname in flist:
     hdr.set('DATE-PRC', time.strftime('%Y-%m-%dT%H:%M:%S'))
     fits.writeto('w'+fname, cIMAGE, hdr, overwrite=True)
 
-    prnlog('{}({},{})<<[{},{}]'.format(fname, cFILTER, cEXPTIME, fFILTER, dEXPTIME))
+    prnlog(f'{fname}({cFILTER},{cEXPTIME})<<[{fFILTER},{dEXPTIME}]')
 

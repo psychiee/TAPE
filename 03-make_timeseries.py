@@ -13,18 +13,18 @@ import numpy as np
 import matplotlib.pyplot as plt 
 from astropy.io import fits 
 from photlib import read_params, prnlog, sigma_clip
+import shutil
 
 # READ the parameter file
 par = read_params()
 
 # MOVE to the working directory 
 WORKDIR = par['WORKDIR']
+shutil.copy('tape.par', WORKDIR)
 os.chdir(WORKDIR)
 
-# ====================================================================
-# PARAMETERS for the list of time-series observation 
-# ====================================================================
-SHIFT_PLOT = bool(int(par['SHIFTPLOT']))  # ON/OFF image shift plot 
+# PARAMETERS for the list of time-series observation
+SHIFT_PLOT = bool(int(par['SHIFTPLOT']))  # ON/OFF image shift plot
 N_APER = len(par['PHOTAPER'].split(',')) # number of aperture in .apw file, photometry result
 FWHM_CUT2 = np.array(par['FWHMCUT'].split(','),float)[1]
 LOGFILE = par['LOGFILE']
@@ -56,7 +56,7 @@ FID = FLIST[0]
 # ------------------------------------------
 # YOU SHOULD CUSTOMIZE THIS NUMBER OF STARS TO MATCH
 # ------------------------------------------
-NCUT = 40
+NCUT = 47
 # ------------------------------------------
 dat = np.genfromtxt(FID+'.apw')
 tx, ty = dat[:,0], dat[:,1] 
@@ -153,11 +153,10 @@ for i, fidx in enumerate(FLIST):
         fdat.write(fstr)
     fdat.close()            
 
-# PLOT the shift for all images
 fmat.close()
 plt.close('all')
 
-# shift plot ====================================================
+# PLOT the shift map
 fig, ax = plt.subplots(num=3, figsize=(8,8), dpi=100)
 ax.plot(xs, ys, 'r-', alpha=0.5)
 fout = open(f'w{WNAME}-shift.txt', 'w')
