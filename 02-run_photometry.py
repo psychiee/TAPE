@@ -84,7 +84,7 @@ prnlog(f"#SUBPIXEL: {SUBPIXEL}")
 flog = open(LOGFILE, 'w')
 
 #  LOOP of images for aperture photometry
-for i, fname in enumerate(flist):
+for inum, fname in enumerate(flist):
     fidx = os.path.splitext(fname)[0]
 
     # READ the FITS file
@@ -111,7 +111,7 @@ for i, fname in enumerate(flist):
         except:
             AIRMASS = 0
     # DISPLAY
-    prnlog(f"#RUN:  {i+1} / {NFRAME}")
+    prnlog(f"#RUN:  {inum+1} / {NFRAME}")
     prnlog(f"#IMAGE/DATE-OBS: {fidx} {[nx, ny]} {DATEOBS}")
     prnlog(f"#OBJECT/EXPTIME/FILTER: {TARGET} {EXPTIME} {FILTER}")
 
@@ -327,7 +327,7 @@ for i, fname in enumerate(flist):
     prnlog('%i stars of %i completed...' % (len(xlist), len(allx)))
 
     # WRITE observation log 
-    flog.write(f'{i:04.0f} {fidx} {HJD:.8f} {EXPTIME:5.0f} {AIRMASS:9.7f} {FILTER}\n')
+    flog.write(f'{inum:04.0f} {fidx} {HJD:.8f} {EXPTIME:5.0f} {AIRMASS:9.7f} {FILTER}\n')
 
 # CLOSE log and print files
 flog.close()
