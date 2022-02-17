@@ -98,9 +98,9 @@ for j in range(1,len(FLX[0,:])+1):
         continue
 
     # CALC. the statistics for the shift values
-    ymed = np.median(y)
-    rms = np.sqrt(np.mean((ymed-y)**2))
-    ysig = np.std(y)
+    ymed = np.median(y[vv])
+    rms = np.sqrt(np.mean((ymed-y[vv])**2))
+    ysig = np.std(y[vv])
 
     # CHECK the criteria for the comparisons
     if ysig > CHKSIG: 
@@ -115,8 +115,8 @@ for j in range(1,len(FLX[0,:])+1):
     # PLOT the light curves of magnitude for each star  
     fig1, ax1 = plt.subplots(num=99,figsize=(10,5))
     ax1.errorbar(x[vv],y[vv],yerr=yerr[vv], fmt='ko', ms=5, alpha=0.5, label=f'rms={rms:.5f}')
-    cc, = np.where((ymed - y)**2 > 4*rms**2)     
-    for ix, iy, ifrm in zip(x[cc],y[cc],FRM[cc]):
+    cc, = np.where((ymed - y[vv])**2 > 4*ysig**2)
+    for ix, iy, ifrm in zip(x[vv[cc]],y[vv[cc]],FRM[vv[cc]]):
         ax1.text(ix,iy,'%d' % (ifrm,),color='r',fontsize=10)
     ax1.set_ylim(ymed+0.03,ymed-0.03)
     ax1.set_title(f'{WNAME} Light Curve (MAG-{j:03d}) JD0={JD0:d}')
