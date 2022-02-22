@@ -231,7 +231,7 @@ for inum, fname in enumerate(flist):
         # CHECK the flux
         if min(aflx) < 0:
             error_msg = f'Negative flux={aflx}'
-            prnlog(f'{fidx} {cx:5d} {cy:5d} [FAIL] FWHM={pfwhm2:.1f}" PEAK={peak:.1f} A/B={fwhm1/fwhm2:.1f} ' +
+            prnlog(f'{fidx} {cx:.0f} {cy:.0f} [FAIL] FWHM={pfwhm2:.1f}" PEAK={peak:.1f} A/B={fwhm1/fwhm2:.1f} ' +
                    f'{error_msg}')
             continue
 
