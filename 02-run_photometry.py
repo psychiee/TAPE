@@ -143,8 +143,6 @@ for inum, fname in enumerate(flist):
         x0, y0 = int(fx) - BOX, int(fy) - BOX
         data = img[(y0):(y0 + 2 * BOX), (x0):(x0 + 2 * BOX)].copy()
 
-
-
         # FIT the stellar profile with 2D Gaussian function
         results.append(fit_gauss_elliptical([y0, x0], data))
         del data
