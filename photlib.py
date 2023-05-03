@@ -13,8 +13,6 @@ from astropy import time as aptime, coordinates as apcoord
 from astropy.stats import sigma_clipped_stats
 from astropy.modeling import models, fitting
 import matplotlib.pyplot as plt
-from matplotlib.patches import Wedge
-import multiprocessing as mp
 import time
 
 #LAT, LON, H = 34.5261362, 127.4470482, 81.35789
@@ -108,7 +106,10 @@ def airmass(alt):
 ######################################################
 # FUNCTIONS for aperture photometry 
 ######################################################
-
+# http://stackoverflow.com/questions/3684484/peak-detection-in-a-2d-array/3689710#3689710     
+# http://www.scipy.org/doc/api_docs/SciPy.ndimage.morphology.html
+# http://www.scipy.org/doc/api_docs/SciPy.ndimage.filters.html
+# http://www.scipy.org/doc/api_docs/SciPy.ndimage.morphology.html
 
 def detect_peaks(image, detection_area=2):
     """
@@ -140,10 +141,6 @@ def detect_peaks(image, detection_area=2):
     detected_peaks = np.logical_xor(local_max, eroded_background)
     return detected_peaks
 
-    # http://stackoverflow.com/questions/3684484/peak-detection-in-a-2d-array/3689710#3689710     
-    # http://www.scipy.org/doc/api_docs/SciPy.ndimage.morphology.html
-    # http://www.scipy.org/doc/api_docs/SciPy.ndimage.filters.html
-    # http://www.scipy.org/doc/api_docs/SciPy.ndimage.morphology.html
 
 def detect_stars(image, threshold, detection_area = 2, saturation = [False,0], margin = 5):
     """
