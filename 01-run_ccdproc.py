@@ -18,21 +18,31 @@ import shutil
 # READ the parameter file
 par = read_params() 
 
-# MOVE to the working directory
+# READ the parameters 
 WORKDIR = par['WORKDIR']
-shutil.copy('tape.par', WORKDIR)
-os.chdir(WORKDIR)
-
-prnlog('#WORK DIR: %s' % par['WORKDIR'])
-# FILTERING for binning option
 BINNING = int(par['BINNING'])
-prnlog('#BINNING for processing: %i' % BINNING)
+prnlog('#WORK: run_ccdproc')
+prnlog(f'#WORK DIR: {WORKDIR}')
+prnlog(f'#BINNING for processing: {BINNING}')
+
+# MOVE to the working directory =======
+CDIR = os.path.abspath(os.path.curdir)
+os.chdir(WORKDIR)
+#======================================
+
+#============= YOU SHOUD CHECK THE FILE NAMES ================
 # MAKE object + bias + dark + flat image file list 
 # modify wild cards (*.fits) for your observation file name
-flist = glob('object-*.fits')  
-flist = flist + glob('dark-*.fits') 
-flist = flist + glob('flat-*.fits') 
-flist = flist + glob('bias-*.fits') 
+biaslist = glob('bias-*.fits') 
+darklist = glob('dark-*.fits') 
+flatlist = glob('flat-*.fits') 
+objlist = glob('object-*.fits')
+prnlog(f"#OBJECT IMAGE: {len(objlist)}")
+prnlog(f"#BIAS FRAME: {len(biaslist)}")
+prnlog(f"#DARK FRAME: {len(darklist)}")
+prnlog(f"#FLAT FRAME: {len(flatlist)}")
+flist = biaslist + darklist + flatlist + objlist
+#============= YOU SHOUD CHECK THE FILE NAMES ================
 
 # DEFINE the list for information of FITS files 
 TARGET, TYPE, DATEOBS, EXPTIME, FILTER, FNAME = [],[],[],[],[],[]
@@ -75,10 +85,9 @@ for s in sort_list:
     f.close()
     prnlog('add to '+lname+' ...' )
     
-time.sleep(2)    
+time.sleep(0.5)    
 
-# Make master bias ========================================================
-
+# COMBINE bias frames ========================================================
 bias_list = np.genfromtxt('wbias.list',dtype='U') 
 bias_stack = []
 for fname in bias_list:
@@ -88,48 +97,46 @@ for fname in bias_list:
     prnlog(f"{fname:s} {np.mean(dat):8.1f} {np.std(dat):8.1f} {np.max(dat):8.1f} {np.min(dat):8.1f}")
 master_bias = np.array(np.median(bias_stack, axis=0), dtype=np.float32)
 dat = master_bias
-prnlog(f"MASTER {np.mean(dat):8.1f} {np.std(dat):8.1f} {np.max(dat):8.1f} {np.min(dat):8.1f}")
-
-prnlog('Save to wbias.fits ...')
+prnlog(f"MASTER BIAS {np.mean(dat):8.1f} {np.std(dat):8.1f} {np.max(dat):8.1f} {np.min(dat):8.1f}")
+# WRITE the master bias to FITS
 hdr.set('DATE-PRC', time.strftime('%Y-%m-%dT%H:%M:%S'))
 hdr.set('OBJECT', 'wbias')
 fits.writeto('wbias.fits', master_bias, hdr, overwrite=True)
     
-# make master dark ========================================================
+# COMBINE dark frames ========================================================
 list_files = glob('wdark*.list')
 master_darks, exptime_darks = [], [] 
+# LOOP of the exposure time
 for lname in list_files:
     dark_list = np.genfromtxt(lname, dtype='U') 
     fidx = os.path.splitext(lname)[0]
-
     dark_stack = [] 
     for fname in dark_list: 
         hdu = fits.open(fname)[0]
         dat, hdr = hdu.data, hdu.header
         dark_stack.append(dat - master_bias) 
         prnlog(f"{fname:s} {np.mean(dat):8.1f} {np.std(dat):8.1f} {np.max(dat):8.1f} {np.min(dat):8.1f}")
-    master_dark = np.array(np.median(dark_stack, axis=0), dtype=np.float32)
+    master_dark = np.median(dark_stack, axis=0)
     exptime_dark = hdr.get('EXPTIME')
-    prnlog('Save to %s.fits ...%s %i' % (fidx, hdr['IMAGETYP'], hdr['EXPTIME']))
+    dat = master_dark 
+    prnlog(f"MASTER DARK {exptime_dark} {np.mean(dat):8.1f} {np.std(dat):8.1f} {np.max(dat):8.1f} {np.min(dat):8.1f}")
+    # WRITE the master dark to FITS 
     hdr.set('OBJECT',fidx)
     hdr.set('DATE-PRC', time.strftime('%Y-%m-%dT%H:%M:%S'))
     hdr.set('EXPTIME', exptime_dark)
     fits.writeto(fidx+'.fits', master_dark, hdr, overwrite=True)        
-
-    dat = master_dark 
-    prnlog(f"MASTER {np.mean(dat):8.1f} {np.std(dat):8.1f} {np.max(dat):8.1f} {np.min(dat):8.1f}")
-
+    # MAKE the list of the master dark for each exposure 
     master_darks.append(master_dark)
     exptime_darks.append(exptime_dark)
 
 
-# make master flats =======================================================
+# COMBINE the flat frames =======================================================
 list_files = glob('wflat*.list') 
 master_flats, filter_flats = [], [] 
+# LOOP of filters 
 for lname in list_files: 
     flat_list = np.genfromtxt(lname, dtype='U') 
     fidx = os.path.splitext(lname)[0]
-
     flat_stack = [] 
     for fname in flat_list:
         hdu = fits.open(fname)[0]
@@ -139,40 +146,41 @@ for lname in list_files:
         flat_stack.append(fdat)
         filter_flat = str.strip(hdr.get('FILTER'))
         prnlog(f"{fname:s} {np.mean(dat):8.1f} {np.std(dat):8.1f} {np.max(dat):8.1f} {np.min(dat):8.1f}")
-    master_flat = np.array(np.median(flat_stack, axis=0), dtype=np.float32)
-    prnlog('Save to %s.fits ...%s %s' % (fidx, hdr['IMAGETYP'], hdr['FILTER']))
+    master_flat = np.median(flat_stack, axis=0)
+    dat = master_flat
+    prnlog(f"MASTER FLAT {filter_flat} {np.mean(dat):8.1f} {np.std(dat):8.1f} {np.max(dat):8.1f} {np.min(dat):8.1f}")
+    # WRITE the mater flat to the FITS
     hdr.set('DATE-PRC', time.strftime('%Y-%m-%dT%H:%M:%S'))
     hdr.set('OBJECT', fidx)
     hdr.set('FILTER', filter_flat)
     fits.writeto(fidx+'.fits', master_flat, hdr, overwrite=True)         
-        
-    dat = master_flat
-    prnlog(f"MASTER {np.mean(dat):8.1f} {np.std(dat):8.1f} {np.max(dat):8.1f} {np.min(dat):8.1f}")
+    # WRITE the mater flat to the FITS        
     master_flats.append(master_flat)
     filter_flats.append(filter_flat)    
 
-# Do preprocessing of object images 
+# DO PREPROCESSING with the calibration frames 
 flist = np.genfromtxt('wobj.list', dtype='U')
 for fname in flist:
     hdu = fits.open(fname)[0]
     cIMAGE, hdr = hdu.data, hdu.header
     cFILTER = str.strip(hdr.get('FILTER'))
     cEXPTIME = float(hdr.get('EXPTIME'))
-
-    # Find closest exposure time dark
+    # FIND the master dark with the closest exposure time
     dd = np.argmin(np.abs(np.array(exptime_darks) - cEXPTIME))
     dEXPTIME = exptime_darks[dd]
     dFRAME = master_darks[dd]
     dFRAME = dFRAME * (cEXPTIME/dEXPTIME)
-    # Find flat image
+    # FIND the master flat with the same filter 
     ff = filter_flats.index(cFILTER)
     fFILTER = filter_flats[ff]
     fFRAME = master_flats[ff]
     cIMAGE = cIMAGE - master_bias - dFRAME
     cIMAGE = np.array(cIMAGE / fFRAME, dtype=np.float32)
-
+    # WRITE the calibrated image to the FITS
     hdr.set('DATE-PRC', time.strftime('%Y-%m-%dT%H:%M:%S'))
     fits.writeto('w'+fname, cIMAGE, hdr, overwrite=True)
-
     prnlog(f'{fname}({cFILTER},{cEXPTIME})<<[{fFILTER},{dEXPTIME}]')
 
+# RETURN to the directory ===========
+os.chdir(CDIR) 
+#====================================

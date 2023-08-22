@@ -21,14 +21,10 @@ import shutil
 # READ the parameter file
 par = read_params()
 
-# MOVE to the working directory
-WORKDIR = par['WORKDIR']
-shutil.copy('tape.par', WORKDIR)
-os.chdir(WORKDIR)
-
 # ==================================================================
 # PARAMETERS for aperture photometry
 # ==================================================================
+WORKDIR = par['WORKDIR']
 # CCD/Optics parameters
 BINNING = int(par['BINNING'])
 PSCALE = float(par['PSCALE'])
@@ -51,6 +47,11 @@ PLOT_FLAG = bool(int(par['STARPLOT']))
 LOGFILE = par['LOGFILE']
 # Observatory information for HJD
 LAT, LON, H = float(par['OBSLAT']), float(par['OBSLON']), float(par['OBSELEV'])
+
+# MOVE to the working directory =======
+CDIR = os.path.abspath(os.path.curdir)
+os.chdir(WORKDIR)
+#======================================
 
 # -------------------------------------------------------------------------
 # GEN. the list of FITS files for aperture photometry
@@ -79,6 +80,7 @@ prnlog(f"#SATU. LEVEL = {SATU}")
 prnlog(f"#PHOT_APER: {PHOT_APER}")
 prnlog(f"#SKY_ANNUL: {[SKY_ANNUL1, SKY_ANNUL2]}")
 prnlog(f"#SUBPIXEL: {SUBPIXEL}")
+
 
 # SET the file name of observation log
 flog = open(LOGFILE, 'w')
@@ -329,3 +331,7 @@ for inum, fname in enumerate(flist):
 
 # CLOSE log and print files
 flog.close()
+
+# RETURN to the directory ===========
+os.chdir(CDIR) 
+#====================================

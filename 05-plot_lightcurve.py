@@ -9,7 +9,7 @@
 @author: wskang
 @update: 2020/05/19
 """
-import os 
+import os, shutil 
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.io import fits 
@@ -18,10 +18,8 @@ from photlib import read_params, prnlog, sigma_clip
 # READ the parameter file
 par = read_params()
 
-# MOVE to the working directory
-os.chdir(par['WORKDIR'])
-
 # TARGET information
+WORKDIR = par['WORKDIR']
 PHOT_APER = np.array(par['PHOTAPER'].split(','), float)   # Radius of aperture
 N_APER = len(PHOT_APER)
 T_APER = int(par['APERUSED']) # index of used aperture
@@ -38,6 +36,11 @@ prnlog(f'#TARGET: {TARGET}')
 prnlog(f'#TARGET INDEX: {TNUM1}')
 prnlog(f'#COMPARISON INDICES: {CLIST1}')
 prnlog(f'#LOGFILE: {LOGFILE}')
+
+# MOVE to the working directory =======
+CDIR = os.path.abspath(os.path.curdir)
+os.chdir(WORKDIR)
+#======================================
 
 # CONVERT number into index
 TNUM = TNUM1 - 1
@@ -85,9 +88,7 @@ ax.set_title(f'Target & Comparions: {WNAME}-{FILTER} / R_AP={PHOT_APER[T_APER-1]
 fig.savefig(f'w{WNAME}-{FILTER}-mark.png')
 plt.close('all')
 
-#prnlog('Plot the image with target & comparisons')
-
-# READ the apt files
+# READ the apx files
 FLX, ERR, MAG, MRR, FLG = [], [], [], [], []
 for i, fidx in enumerate(FLIST):
     dat = np.genfromtxt(fidx+'.apx')
@@ -195,3 +196,6 @@ if NCOMP > 1:
     fig.clf()
 plt.close('all')
 
+# RETURN to the directory =============
+os.chdir(CDIR)
+#======================================

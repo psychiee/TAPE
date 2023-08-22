@@ -18,16 +18,12 @@ import shutil
 # READ the parameter file
 par = read_params()
 
-# MOVE to the working directory 
-WORKDIR = par['WORKDIR']
-shutil.copy('tape.par', WORKDIR)
-os.chdir(WORKDIR)
-
 # PARAMETERS for the list of time-series observation
+WORKDIR = par['WORKDIR']
+LOGFILE = par['LOGFILE']
 SHIFT_PLOT = bool(int(par['SHIFTPLOT']))  # ON/OFF image shift plot
 N_APER = len(par['PHOTAPER'].split(',')) # number of aperture in .apw file, photometry result
 FWHM_CUT2 = np.array(par['FWHMCUT'].split(','),float)[1]
-LOGFILE = par['LOGFILE']
 OBSDATE = par['OBSDATE']
 TARGETNAME = par['TARGETNAM']
 WNAME = OBSDATE+'-'+TARGETNAME
@@ -36,6 +32,11 @@ prnlog(f"#WORK: make_timeseries")
 prnlog(f"#WORK DIR: {WORKDIR}")
 prnlog(f"#SHIFT PLOT: {SHIFT_PLOT}")
 prnlog(f"#LOG FILE: {LOGFILE}")
+
+# MOVE to the working directory =======
+CDIR = os.path.abspath(os.path.curdir)
+os.chdir(WORKDIR)
+#======================================
        
 # READ log file and 
 # SET the fiducial frame index and position 
@@ -50,18 +51,19 @@ for line in flog:
     lX.append(float(tmp[4]))
 FNUM, FLIST, FJD, FX = np.array(lfrm), np.array(lname), np.array(lJD), np.array(lX)
 flog.close()
-FID = FLIST[0]
+
     
-# READ fiducial frame index and position
+# READ the reference frame index and position
+FID = FLIST[0]
+dat = np.genfromtxt(FID+'.apw')
+tx, ty = dat[:,0], dat[:,1] 
+tnum = np.arange(1,len(tx)+1, dtype=int)
+tmag = dat[:,(2*N_APER+2)]
 # ------------------------------------------
 # YOU SHOULD CUSTOMIZE THIS NUMBER OF STARS TO MATCH
 # ------------------------------------------
 NCUT = 47
 # ------------------------------------------
-dat = np.genfromtxt(FID+'.apw')
-tx, ty = dat[:,0], dat[:,1] 
-tnum = np.arange(1,len(tx)+1, dtype=int)
-tmag = dat[:,(2*N_APER+2)]
 tbb = np.argsort(tmag)[:NCUT]
 
 fmat = open('wmatching.log', 'w')
@@ -199,7 +201,9 @@ prnlog(f'WRITE TO w{WNAME}-chart.png...')
 fig.savefig(f'w{WNAME}-chart.png')
 plt.close('all')
 
-
+# RETURN to the directory ===========
+os.chdir(CDIR) 
+#====================================
 
 
 

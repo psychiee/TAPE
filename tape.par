@@ -12,7 +12,7 @@ PSCALE    0.387        # (APPHOT) pixel scale in stellar profile plot 0.3867,0.4
 STARPLOT  0            # (APPHOT) (BOOL) plotting the diagram for each star
 LOGFILE   wobs.log     # (APPHOT) log file name for LC processing
 APERUSED  2            # (TIMESERIES) index of aperture(in PHOTAPER) for LC
-SHIFTPLOT 1            # (TIMESERIES) flag for plotting all shift-images
+SHIFTPLOT 0            # (TIMESERIES) flag for plotting all shift-images
 OBSDATE   180326       # (TIMESERIES) observation date
 TARGETNAM HAT-P-12b    # (TIMESERIES) target name
 TARGETNUM 13           # (TIMESERIES) target star numbers in finding-chart

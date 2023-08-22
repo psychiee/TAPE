@@ -7,7 +7,7 @@
 @author: wskang
 @update: 2020/05/19
 """
-import os
+import os, shutil
 import numpy as np
 import matplotlib.pyplot as plt
 from photlib import read_params, prnlog
@@ -15,16 +15,14 @@ from photlib import read_params, prnlog
 # READ the parameter file
 par = read_params()
 
-# MOVE to the working directory 
-WORKDIR = par['WORKDIR']
-os.chdir(WORKDIR)
-
 # PARAMETERS for the list of time-series observation
+WORKDIR = par['WORKDIR']
 LOGFILE = par['LOGFILE']
 PHOT_APER = np.array(par['PHOTAPER'].split(','), float)   # Radius of aperture 
 N_APER = len(PHOT_APER)
 T_APER = int(par['APERUSED'])
 TNUM1 = int(par['TARGETNUM'])
+TNUM = TNUM1 - 1 # the index of target in the star list
 TNAME = par['TARGETNAM']
 WNAME = par['OBSDATE']+'-'+par['TARGETNAM']
 CHKSIG, CHKDELM = float(par['CHKSIG']), float(par['CHKDELM'])
@@ -35,7 +33,11 @@ prnlog(f'#APERTURE: [{T_APER}] R={PHOT_APER[T_APER-1]}pix')
 prnlog(f'#TARGETNUM: {TNUM1}')
 prnlog(f'#LOGFILE: {LOGFILE}')
        
-TNUM = TNUM1 - 1 
+# MOVE to the working directory =======
+CDIR = os.path.abspath(os.path.curdir)
+os.chdir(WORKDIR)
+#======================================
+
 # READ the time-series log file 
 flog = open(LOGFILE,'r')
 lfrm, lname, lJD, lX, lFILTER = [], [], [], [], []
@@ -49,13 +51,15 @@ for line in flog:
 FRM, FLIST, JD, X = np.array(lfrm), np.array(lname), np.array(lJD), np.array(lX)
 flog.close()
 JD0 = int(JD[0])
-# PLOT the light curves of magnitude for each star  
+
+# PLOT the airmass variation 
 fig1, ax1 = plt.subplots(figsize=(10,5))
 ax1.plot(JD-JD0, X,'r-',lw=2)
 ax1.grid()
 ax1.set_title(f'{WNAME} AIRMASS')
 fig1.savefig(f'w{WNAME}-AIRMASS.png')
 plt.close('all')
+
 # CHECK number of frames and stars 
 tmp = np.genfromtxt(FLIST[0]+'.apx') 
 NSTARS = len(tmp[:,0])
@@ -127,3 +131,6 @@ for j in range(1,len(FLX[0,:])+1):
 
 plt.close('all')
 
+# RETURN to the directory ===========
+os.chdir(CDIR) 
+#====================================

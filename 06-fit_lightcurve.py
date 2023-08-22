@@ -8,17 +8,20 @@
 @author: wskang
 @update: 2022/01/20
 """
-import time, os
+import time, os, io
 import numpy as np
 import matplotlib.pyplot as plt 
 from scipy.optimize import curve_fit
+from PIL import Image
 from photlib import read_params, prnlog
+
 
 # PLOT the model of fitting results
 DEMO = False 
 
 def run_fit(par):
     
+    # READ the parameters 
     WORKDIR = par['WORKDIR']
     ODATE = par['OBSDATE']
     PNAME = par['TARGETNAM']
@@ -35,11 +38,10 @@ def run_fit(par):
     A, RR, B = float(par['A']), float(par['RR']), float(par['B'])
     DMIN = float(par['DMIN'])
     PLOTDESC = par['PLOTDESC']
-    # CHECK the parameters in database
 
+    # CHECK the parameters in database
     dnames = np.genfromtxt(DBFILE, usecols=(0,), dtype='U', delimiter=',')
     dpars = np.genfromtxt(DBFILE, usecols=(1,2,3,4,5), delimiter=',')
-
     vv = np.where(dnames == PNAME)[0]
     if len(vv) > 0:
         PER = dpars[vv[0],0]
@@ -48,11 +50,7 @@ def run_fit(par):
         if ~np.isnan(dpars[vv[0],3]): RR = dpars[vv[0],3]
         if ~np.isnan(dpars[vv[0],4]): B = dpars[vv[0],4]
 
-    # ====================================
-    # MOVE to the working directory
-    CDIR = os.path.abspath(os.path.curdir)
-    os.chdir(WORKDIR) # GO TO DIR
-    # ====================================
+    # PRINT the parameters 
     prnlog("#WORK: fit_lightcurve")
     prnlog(f"#DATA FILE: {DATAFILE}")
     prnlog(f"#EXOPLANET DATA FILE: {DBFILE}")
@@ -63,6 +61,11 @@ def run_fit(par):
     prnlog(f"  RR={RR:.3f}")
     prnlog(f"  B={B:.3f}")
     
+    # MOVE to the working directory =======
+    CDIR = os.path.abspath(os.path.curdir)
+    os.chdir(WORKDIR)
+    #======================================
+
     tp, rp, rb = PER, RR, B
     ra = (A / RSTAR) * 215.093991
     dat = np.loadtxt(DATAFILE)
@@ -149,7 +152,6 @@ def run_fit(par):
     c_p = c_rp * RSTAR / 0.10045
     c_p_err = c_rp_err * RSTAR / 0.10045
     # PRINT the results 
-
     prnlog('INPUTS-------------')
     prnlog(f"Tc = {x0+tc:.5f}")
     prnlog(f"Rp = {RR * RSTAR / 0.10045}")
@@ -248,7 +250,7 @@ def light_curve(x, *p):
     '''
     ra2p, tc, rp, rb = p
     
-    x = np.array(x, dtype=np.double)
+    x = np.array(x, dtype=np.float64)
     
     # normalied time series ( t = 0 : middle of transit) 
     tt = x - tc
@@ -344,6 +346,8 @@ def local_continuum(xp, yp, p0=[1,0], cuts=[0.995,1.5]):
 
 # SUB FUNCTIONS
 def plotting(rp=0.1, rb=0.0):
+    import imageio 
+
     R, I0 = 500, 100
     pp, pb = R*rp, R*(1 - rb)
 
@@ -351,7 +355,8 @@ def plotting(rp=0.1, rb=0.0):
     ly = np.zeros(lx.size) 
     for i, rx in enumerate(lx):
         ly[i] = fdisk(np.sqrt(rb**2+rx**2), rp)
-
+    
+    plot_images = [] 
     for i in range(0,len(lx),10):
         rx = lx[i]
         px = rx*R + R + R/2.0
@@ -387,9 +392,11 @@ def plotting(rp=0.1, rb=0.0):
         dy = (1.0 - min(ly))*1.2
         ax2.set_ylim(1.0-dy, 1+dy*0.1)
         ax2.grid()
-        plt.savefig('tr_%03d_%03d_%04d.png' % (rp*100, rb*100, i))
+        img_buf = io.BytesIO()
+        plt.savefig(img_buf, format='png')
+        plot_images.append(Image.open(img_buf))
         plt.close('all')
-
+    imageio.mimsave(f"transit_{rp*100:03.0f}_{rb*100:03.0f}.gif", plot_images)
 
 def example1():
     plt.figure(figsize=(6,4))
