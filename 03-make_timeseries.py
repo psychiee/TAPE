@@ -13,7 +13,6 @@ import numpy as np
 import matplotlib.pyplot as plt 
 from astropy.io import fits 
 from photlib import read_params, prnlog, sigma_clip
-import shutil
 
 # READ the parameter file
 par = read_params()

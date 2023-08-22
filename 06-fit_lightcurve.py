@@ -8,13 +8,11 @@
 @author: wskang
 @update: 2022/01/20
 """
-import time, os, io
+import time, os
 import numpy as np
 import matplotlib.pyplot as plt 
 from scipy.optimize import curve_fit
-from PIL import Image
 from photlib import read_params, prnlog
-
 
 # PLOT the model of fitting results
 DEMO = False 
@@ -346,7 +344,7 @@ def local_continuum(xp, yp, p0=[1,0], cuts=[0.995,1.5]):
 
 # SUB FUNCTIONS
 def plotting(rp=0.1, rb=0.0):
-    import imageio 
+    import imageio, PIL, io 
 
     R, I0 = 500, 100
     pp, pb = R*rp, R*(1 - rb)
@@ -394,7 +392,7 @@ def plotting(rp=0.1, rb=0.0):
         ax2.grid()
         img_buf = io.BytesIO()
         plt.savefig(img_buf, format='png')
-        plot_images.append(Image.open(img_buf))
+        plot_images.append(PIL.Image.open(img_buf))
         plt.close('all')
     imageio.mimsave(f"transit_{rp*100:03.0f}_{rb*100:03.0f}.gif", plot_images)
 

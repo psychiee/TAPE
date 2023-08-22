@@ -15,8 +15,6 @@ from matplotlib.patches import Wedge, Circle
 from astropy.io import fits
 from astropy.modeling import models, fitting
 from photlib import read_params, helio_jd, calc_jd, find_stars_th, sigma_clip, prnlog, airmass, fit_gauss_elliptical, cal_magnitude
-import multiprocessing as mp
-import shutil
 
 # READ the parameter file
 par = read_params()

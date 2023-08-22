@@ -13,7 +13,6 @@ from glob import glob
 import numpy as np 
 from astropy.io import fits 
 from photlib import read_params, prnlog
-import shutil
 
 # READ the parameter file
 par = read_params() 
